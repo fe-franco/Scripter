@@ -117,6 +117,15 @@ namespace eval ttk::theme::proxttk-dark {
             }
         }
 
+        ttk::style layout Remap {
+            Remap.button -children {
+                Remap.padding -children {
+                    Remap.indicator -side left
+                    Remap.label -side right -expand true
+                }
+            }
+        }        
+
         ttk::style layout ToggleButton {
             ToggleButton.button -children {
                 ToggleButton.padding -children {
@@ -324,6 +333,18 @@ namespace eval ttk::theme::proxttk-dark {
                 {pressed !selected} $I(off-basic) \
                 active $I(off-basic) \
             ] -width 46 -sticky w
+            
+        # Remap
+        ttk::style element create Remap.indicator image \
+            [list $I(off-remap) \
+                {selected disabled} $I(on-remap) \
+                disabled $I(off-remap) \
+                {pressed selected} $I(on-remap) \
+                {active selected} $I(on-remap) \
+                selected $I(on-remap) \
+                {pressed !selected} $I(off-remap) \
+                active $I(off-remap) \
+            ] -width 46 -sticky w            
 
         # ToggleButton
         ttk::style configure ToggleButton -padding {8 4 8 4} -width -10 -anchor center

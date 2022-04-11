@@ -1,46 +1,63 @@
 import tkinter as tk
-
-app = tk.Tk()
-
-tabelas = []
-
-def resetButton():
-    createTabelasButton.grid_remove()
-    removeTabelasButton.grid_remove()
-    printerButton.grid_remove()
-    createTabelasButton.grid(column=0, row=len(tabelas)+1)
-    printerButton.grid(column=1, row=len(tabelas)+1)
-    removeTabelasButton.grid(column=2, row=len(tabelas)+1)
+from tkinter import ttk
+import re
 
 
-def createtabelas():
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
 
-    Tabelas = tk.Entry(app)
-    tabelas.append(Tabelas)
+        self.title('Tkinter Validation Demo')
 
-    Tabelas.grid(column=0, row=len(tabelas), columnspan=3)
-    
+        self.create_widgets()
 
-    print(len(tabelas))
-    resetButton()
+    def create_widgets(self):
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=3)
+        self.columnconfigure(2, weight=1)
 
-def removetabelas():
-    createTabelasButton.grid_remove()
-    removeTabelasButton.grid_remove()
-    tabelas.pop().grid_remove()
-    resetButton()
-    
+        # label
+        ttk.Label(text='Email:').grid(row=0, column=0, padx=5, pady=5)
 
-createTabelasButton = tk.Button( app, text="+", command=createtabelas)
-createTabelasButton.grid(column=0, row=len(tabelas)+1)
-removeTabelasButton = tk.Button( app, text="-", command=removetabelas)
-removeTabelasButton.grid(column=2, row=len(tabelas)+1)
+        # email entry
+        vcmd = (self.register(self.validate), '%P')
+        ivcmd = (self.register(self.on_invalid),)
 
-def printer():
-    for i in tabelas:
-        print(i.get())
+        self.email_entry = ttk.Entry(self, width=50)
+        self.email_entry.config(validate='focusout', validatecommand=vcmd, invalidcommand=ivcmd)
+        self.email_entry.grid(row=0, column=1, columnspan=2, padx=5)
 
-printerButton = tk.Button( app, text="print", command=printer)
-printerButton.grid(column=1, row=len(tabelas)+1)
+        self.label_error = ttk.Label(self, foreground='red')
+        self.label_error.grid(row=1, column=1, sticky=tk.W, padx=5)
 
-app.mainloop()
+        # button
+        self.send_button = ttk.Button(text='Send').grid(row=0, column=4, padx=5)
+
+    def show_message(self, error='', color='black'):
+        self.label_error['text'] = error
+        self.email_entry['foreground'] = color
+
+    def validate(self, value):
+        """
+        Validat the email entry
+        :param value:
+        :return:
+        """
+        pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        if re.fullmatch(pattern, value) is None:
+            return False
+
+        self.show_message()
+        return True
+
+    def on_invalid(self):
+        """
+        Show the error message if the data is not valid
+        :return:
+        """
+        self.show_message('Please enter a valid email', 'red')
+
+
+if __name__ == '__main__':
+    app = App()
+    app.mainloop()

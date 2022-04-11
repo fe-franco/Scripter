@@ -1,26 +1,26 @@
---ORIGEM: JORDAO
-export ORACLE_SID=jordao
+--ORIGEM: 
+export ORACLE_SID=
 export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-expdp BKP_EXPORT/AxxxM0 directory=DBA schemas=SISA_JORDAO dumpfile=202203220464796.dmp logfile=exp_202203220464796.log exclude=statistics version=12.1 CONTENT=METADATA_ONLY
+expdp BKP_EXPORT/AxxxM0 directory=DBA schemas= dumpfile=a.dmp logfile=exp_a.log exclude=statistics
 
---Destino: APEX4
+--DESTINO: 
 
-create tablespace SISA_JORDAO_DAT datafile '/storage/apex4/data05/SISA_JORDAO_DAT.dbf' size 100m autoextend on next 100m;
+create tablespace _DAT '/storage/----/data0-/_DAT.dbf' size 100m autoextend on next 100m;
+create tablespace _IDX '/storage/----/data0-/_IDX.dbf' size 100m autoextend on next 100m;
+create user  identified by  default tablespace _DAT temporary tablespace TEMP quota unlimited on _DAT quota unlimited on _IDX quota 0k on SYSTEM;
 
-create tablespace SISA_JORDAO_IDX datafile '/storage/apex4/data05/SISA_JORDAO_IDX.dbf' size 100m autoextend on next 100m;
 
-create user SISA_JORDAO identified by SISA_JORDAO default tablespace SISA_JORDAO_DAT temporary tablespace TEMP quota unlimited on SISA_JORDAO_DAT quota unlimited on SISA_JORDAO_IDX quota 0k on SYSTEM;
+impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile=a.dmp logfile=imp_a.log
 
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile=202203220464796.dmp logfile=imp_202203220464796.log
-
-alter user SISA_JORDAO identified by SISA_JORDAO account unlock;
+alter user  identified by  account unlock;
 
 BEGIN
 DBMS_NETWORK_ACL_ADMIN.append_host_ace (
     host       => '*',
     ace        => xs$ace_type(privilege_list => xs$name_list('connect','resolve'),
-                            principal_name => 'SISA_JORDAO',
+                            principal_name => '',
                             principal_type => XS_ACL.PTYPE_DB));
 END;
 /
+
+

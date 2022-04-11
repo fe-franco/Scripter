@@ -1,8 +1,9 @@
+from email.policy import default
+from pickle import FALSE
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk, BooleanVar, END
 import os
-
 
 class MainWindow(tk.Tk):
 
@@ -70,6 +71,7 @@ class StartPage(ttk.Frame):
                              command=lambda: controller.show_frame("PageTwo"))
         button1.grid(sticky='we', column=0, row=2, pady=10, padx=20)
         button2.grid(sticky='we', column=0, row=3, pady=10, padx=20)
+        
 
 
 class PageOne(ttk.Frame):
@@ -89,78 +91,319 @@ class PageOne(ttk.Frame):
         # Frame Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
         widgets_frame = ttk.Frame(self)
         widgets_frame.grid(row=1, column=0, sticky='new',
-                           padx=(paddingY + 15, paddingY))
+                           padx=(paddingY, paddingY))
 
-        # Owner
-        ownerBox = ttk.Entry(widgets_frame)
-        ownerBox.grid(column=0, row=1, pady=paddingY, sticky="we")
-        ownerBoxLabel = ttk.Label(widgets_frame, text="Owner", font="colortube 11").grid(column=0, row=1, sticky="nw",
-                                                                                         padx=5)
+        # Owners
+        global owners
+        global MAX_ROWS
+        global start_col
+        global createOwnersButton
+        global removeOwnersButton
+        global frames
+        TESTE = 1
+        MAX_ROWS = 3
+        MAX_COLS = 2
+        owners = []
+        start_col = -2
+        # Frame
+        frames = []
 
-        # Senha
-        def toggleSenha():
-            if varSenhaCheck.get():
-                SenhaBox.grid(column=0, row=2, pady=paddingY, sticky="we")
-                SenhaBoxLabel.grid(column=0, row=2, sticky="nw", padx=5)
+        def validate(input):
+            if input.isdigit():
+                print(input)
+                return True
+
+            elif input == "":
+                print(input)
+                return True
+
             else:
-                SenhaBox.grid_forget()
-                SenhaBoxLabel.grid_forget()
+                print(input)
+                return False
 
-        SenhaBox = ttk.Entry(widgets_frame)
-        SenhaBoxLabel = ttk.Label(
-            widgets_frame, text="Senha", font="colortube 11")
+        def createFrame():
+            global frames
+            defaultFrame = ttk.Frame(widgets_frame)
+            frames.append(defaultFrame)
 
-        # Owner Destino
-        def toggleRemap():
-            if varRemapCheck.get():
-                owner_destinoBox.grid(
-                    column=0, row=3, pady=paddingY, sticky="we")
-                owner_destinoBoxLabel.grid(
-                    column=0, row=3, sticky="nw", padx=5)
+        def resetWidgets(start_row, start_col, frame):
+            global createOwnersButton
+            global removeOwnersButton
+
+            createOwnersButton = ttk.Button(
+                frame, text="+ Owner", command=createOwners)
+            removeOwnersButton = ttk.Button(
+                frame, text="- Owner", command=removeOwners)
+
+            if len(owners) > 1:
+                removeOwnersButton.grid(
+                    column=1+start_col, row=start_row+9, sticky="nwe", pady=paddingY*2.5, padx=(2.5, 0))
+                createOwnersButton.grid(
+                    column=start_col, row=start_row+9, sticky="new", pady=paddingY*2.5, padx=(0, 2.5))
             else:
-                owner_destinoBox.grid_forget()
-                owner_destinoBoxLabel.grid_forget()
+                removeOwnersButton.grid_forget()
+                createOwnersButton.grid(
+                    column=start_col, row=start_row+9, columnspan=2, sticky="new", pady=paddingY*2.5)
 
-        owner_destinoBox = ttk.Entry(widgets_frame)
-        owner_destinoBoxLabel = ttk.Label(
-            widgets_frame, text="Owner Destino", font="colortube 11")
+            if start_col == 2:
+                createOwnersButton.grid_configure(
+                    padx=(paddingY*2, 2.5), pady=paddingY)
+                removeOwnersButton.grid_configure(pady=paddingY)
+                if MAX_COLS*MAX_ROWS == len(owners):
+                    print("Não é possível adicionar mais owners")
+                    createOwnersButton.grid_forget()
+                    removeOwnersButton.grid_forget()
+                    removeOwnersButton = ttk.Button(
+                        widgets_frame2, text="- Owner", command=removeOwners)
+                    removeOwnersButton.grid(
+                        row=8, column=2, columnspan=2, sticky="ew", pady=paddingY)
 
-        # Senha CheckBox
-        varSenhaCheck = BooleanVar()
-        SenhaCheck = ttk.Checkbutton(widgets_frame, variable=varSenhaCheck, text="Senha", command=toggleSenha,
-                                     style='Switch')
-        SenhaCheck.grid(row=6, column=0, sticky='w', pady=(0, 5))
+            print("Final row: " + str(start_row+7), " | Final col: " + str(start_col), " | Final frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"])+"\n")
+            # print(str(MAX_COLS*MAX_ROWS))
+            # print(str(len(owners))+"\n")
 
-        # Remap CheckBox
-        varRemapCheck = BooleanVar()
-        RemapCheck = ttk.Checkbutton(widgets_frame, text='Remap Owner', variable=varRemapCheck, command=toggleRemap,
-                                     style='Switch')
-        RemapCheck.grid(row=7, column=0, sticky='w', pady=(0, 5))
+        def createOwners():
+            global start_col
+            global MAX_ROWS
+            global owners
+            if MAX_COLS*MAX_ROWS == len(owners):
+                return
 
-        # Drop CheckBox
-        varDropCheck = BooleanVar()
-        DropCheck = ttk.Checkbutton(
-            widgets_frame, text='Dropar Owner', variable=varDropCheck, style='Switch')
-        DropCheck.grid(row=8, column=0, sticky='w', pady=(0, 5))
-        drop_text = ""
+            createOwnersButton.grid_forget()
+            removeOwnersButton.grid_forget()
 
-        # Version CheckBox
-        varVerCheck = BooleanVar()
-        VerCheck = ttk.Checkbutton(
-            widgets_frame, text='Version 12.1', variable=varVerCheck, style='Switch')
-        VerCheck.grid(row=9, column=0, sticky='w', pady=(0, 5))
+            # Mostrar ou esconder Senha
+            def toggleSenha():
+                if var_senha_check.get():
+                    senha.grid()
+                    label_senha.grid()
+                else:
+                    senha.grid_remove()
+                    label_senha.grid_remove()
 
-        # Metadata CheckBox
-        varMetaCheck = BooleanVar()
-        MetaCheck = ttk.Checkbutton(
-            widgets_frame, text='Metadata Only', variable=varMetaCheck, style='Switch')
-        MetaCheck.grid(row=10, column=0, sticky='w')
+            # Mostrar ou esconder Owner Destino
+            def toggleRemap():
+                if var_remap_check.get():
+                    my_string = label_origem.config()["text"][4]
+                    split_strings = my_string.split()
+                    split_strings.insert(1, 'Origem')
+                    label_origem.config(text=split_strings)
+                    owner_destino.grid()
+                    label_destino.grid()
+                else:
+                    my_string = label_origem.config()["text"][4]
+                    split_strings = my_string.split()
+                    split_strings.pop(1)
+                    label_origem.config(text=split_strings)
+                    owner_destino.grid_remove()
+                    label_destino.grid_remove()
+
+            start_row = (len(owners) % MAX_ROWS) * 8
+            #print("Remainder of "+str(MAX_ROWS)+": "+str((len(owners)) % MAX_ROWS))
+            #print(str((len(owners)) % MAX_ROWS)+"*7 = "+str(start_row))
+            if len(owners) % MAX_ROWS == 0:
+                start_col += 2
+                createFrame()
+
+            frame = frames[len(frames) - 1]
+
+            if len(owners) % MAX_ROWS == 0:
+                frame.grid(row=start_row, column=start_col,
+                           sticky="new", padx=(paddingY, paddingY))
+
+            # Owner Origem widget
+            reg = frame.register(validate)
+            owner_origem = ttk.Entry(
+                frame, validate="key", validatecommand=(reg, '%P'))
+            label_origem = ttk.Label(frame, text="Owner",
+                                     font="colortube 11")
+            # Owner Destino widget
+            owner_destino = ttk.Entry(frame)
+            label_destino = ttk.Label(frame, text="Owner Destino",
+                                      font="colortube 11")
+
+            # Senha widget
+            senha = ttk.Entry(frame)
+            label_senha = ttk.Label(frame, text="Senha",
+                                    font="colortube 11")
+
+            # Senha CheckBox widget
+            var_senha_check = tk.BooleanVar()
+            senha_check = ttk.Checkbutton(frame, variable=var_senha_check, text="Senha", command=toggleSenha,
+                                          style='Switch')
+            # Remap CheckBox widget
+            var_remap_check = tk.BooleanVar()
+            remap_check = ttk.Checkbutton(frame, text='Remap Owner', variable=var_remap_check, command=toggleRemap,
+                                          style='Switch')
+
+            # Drop CheckBox widget
+            var_drop_check = BooleanVar()
+            drop_check = ttk.Checkbutton(
+                frame, text='Dropar Owner', variable=var_drop_check, style='Switch')
+
+            # Nº DataFiles widget
+            var_data = tk.IntVar()
+            data_file_spin = ttk.Spinbox(
+                frame, from_=1, to=99, width=5, textvariable=var_data)
+            data_file_spin_label = ttk.Label(
+                frame, text='N° de DataFiles', font="colortube 11")
+
+            # Separator
+            separator = ttk.Separator(frame, orient="horizontal")
+
+            owners.append({
+                "frame": frame,
+                "owner_origem": owner_origem,
+                "label_origem": label_origem,
+                "owner_destino": owner_destino,
+                "label_destino": label_destino,
+                "senha_check": senha_check,
+                "senha": senha,
+                "label_senha": label_senha,
+                "var_senha_check": var_senha_check,
+                "remap_check": remap_check,
+                "var_remap_check": var_remap_check,
+                "drop_check": drop_check,
+                "var_drop_check": var_drop_check,
+                "data_file_spin": data_file_spin,
+                "data_file_spin_label": data_file_spin_label,
+                "var_data": var_data,
+                "separator": separator
+            })
+            # Changes labels based on owner count
+            if len(owners) > 1:
+                owners[0]["label_origem"].configure(text="Owner 1")
+                owners[0]["label_destino"].configure(text="Owner Destino 1")
+                owners[0]["label_senha"].configure(text="Senha 1")
+                owners[0]["data_file_spin_label"].configure(
+                    text="N° de DataFiles 1")
+                label_origem.config(text="Owner "+str(len(owners)))
+                label_destino.config(text="Owner Destino "+str(len(owners)))
+                label_senha.config(text="Senha "+str(len(owners)))
+                data_file_spin_label.config(
+                    text='N° de DataFiles '+str(len(owners)))
+                owners[0]["separator"].grid()
+
+                if owners[0]["var_remap_check"].get():
+                    owners[0]["label_origem"].configure(text="Owner Origem 1")
+
+            # Separator
+            separator.grid(row=start_row, column=0, columnspan=2,
+                           sticky='we')
+        
+                
+            # Owner Origem
+            owner_origem.grid(column=0, row=start_row+1, columnspan=2,
+                              pady=(paddingY*2.5, paddingY), sticky="we")
+            label_origem.grid(column=0, row=start_row+1, columnspan=2, sticky="nw",
+                              padx=5, pady=paddingY*((owner_origem.grid_info()["pady"][0]/paddingY)-1))
+            if len(owners) % MAX_ROWS == 1:
+                owner_origem.grid_configure(pady=paddingY)
+                label_origem.grid_configure(pady=0, padx=5)
+
+            # Senha
+            senha.grid(column=0, row=start_row+2, pady=paddingY,
+                       columnspan=2, sticky="we")
+            senha.grid_remove()
+
+            label_senha.grid(column=0, row=start_row+1,
+                             columnspan=2, sticky="nw", padx=5)
+            label_senha.grid_remove()
+
+            # Owner Destino
+            owner_destino.grid(
+                column=0, row=start_row+3, pady=paddingY, columnspan=2, sticky="we")
+            owner_destino.grid_remove()
+            label_destino.grid(column=0, row=start_row+2,
+                               sticky="nw", columnspan=2, padx=5)
+            label_destino.grid_remove()
+
+            # Nº DataFiles
+            data_file_spin.grid(column=0, row=start_row+4,
+                                pady=paddingY, columnspan=2, sticky="we")
+            data_file_spin_label.grid(column=0, row=start_row+3,
+                                      sticky="nw", columnspan=2, padx=(5, 55))
+
+            # Senha CheckBox
+            senha_check.grid(column=0, row=start_row+5,
+                             columnspan=2, sticky='w', pady=(0, paddingY/2))
+
+            # Remap CheckBox
+            remap_check.grid(column=0, row=start_row+6,
+                             columnspan=2, sticky='w', pady=(0, paddingY/2))
+
+            # Drop CheckBox
+            drop_check.grid(column=0, row=start_row+7,
+                            columnspan=2, sticky='w', pady=(0, paddingY*2.5))
+
+            if len(owners) % MAX_ROWS == 1:
+                separator.grid_forget()
+
+            bstart_col = 0
+            bstart_row = start_row
+            if len(owners) % MAX_ROWS == 0:
+                bstart_col = 2
+                bstart_row = -8
+
+            #print("Start row: " + str(bstart_row), " | Start col: " + str(start_col), " | Start frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"]))
+            resetWidgets(bstart_row, bstart_col, frame)
+
+        def removeOwners():
+            createOwnersButton.grid_forget()
+            removeOwnersButton.grid_forget()
+            # offset row by lenght of owners
+            owner = owners.pop()
+            owner["owner_origem"].grid_forget()
+            owner["label_origem"].grid_forget()
+            owner["owner_destino"].grid_forget()
+            owner["label_destino"].grid_forget()
+            owner["senha_check"].grid_forget()
+            owner["senha"].grid_forget()
+            owner["label_senha"].grid_forget()
+            owner["remap_check"].grid_forget()
+            owner["drop_check"].grid_forget()
+            owner["data_file_spin"].grid_forget()
+            owner["data_file_spin_label"].grid_forget()
+            owner["separator"].grid_forget()
+
+            start_row = ((len(owners)) % MAX_ROWS) * 8
+            bstart_col = 0
+            #print("Remainder of "+str(MAX_ROWS)+": "+str((len(owners)) % MAX_ROWS))
+            #print(str((len(owners)) % MAX_ROWS)+"*7 = "+str(start_row))
+
+            if len(owners) < 2:
+                owners[0]["label_origem"].configure(text="Owner")
+                owners[0]["label_destino"].configure(text="Owner Destino")
+                owners[0]["label_senha"].configure(text="Senha")
+                owners[0]["data_file_spin_label"].configure(
+                    text="N° de DataFiles")
+                if owners[0]["var_remap_check"].get():
+                    owners[0]["label_origem"].configure(text="Owner Origem")
+
+            bstart_row = start_row
+            if len(owners) % MAX_ROWS == 0:
+                frames.pop().grid_forget()
+                bstart_col = 2
+                bstart_row = -8
+
+            frame = frames[len(frames) - 1]
+
+            #print("Start row: " + str(bstart_row), " | Start col: " + str(start_col), " | Start frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"]))
+            resetWidgets(bstart_row, bstart_col, frame)
+
+        createOwnersButton = ttk.Button(
+            widgets_frame, text="+ Owner", command=createOwners)
+        createOwnersButton.grid(
+            column=0, row=7, columnspan=2, sticky="we", pady=paddingY)
+        removeOwnersButton = ttk.Button(
+            widgets_frame, text="- Owner", command=removeOwners)
 
         # Frame Coluna 2    -----------------------------------------------------------------------------------------------------------------------------------
         widgets_frame2 = tk.Frame(self)
         widgets_frame2.grid(row=1, column=1, sticky='nw',
                             padx=(paddingY, paddingY + 15))  # Cria widgets_frame2 na janela
-
+        for i in range(TESTE):
+            createOwners()
         # Ticket
         ticketBox = ttk.Entry(widgets_frame2)
         ticketBox.grid(column=2, row=1, columnspan=2,
@@ -219,102 +462,102 @@ class PageOne(ttk.Frame):
         # Listener para varDataNum chama função resize
         varDataNum.trace('w', resize)
 
-        # Nº DataFiles
-        varData = tk.IntVar()
-        dataFileSpin = ttk.Spinbox(
-            widgets_frame2, from_=1, to=99, width=5, textvariable=varData)
-        dataFileSpin.grid(row=8, column=2, columnspan=2, pady=7)
-        dataFileSpinLabel = ttk.Label(
-            widgets_frame2, text='Nº de DataFiles', font="colortube 11")
-        dataFileSpinLabel.grid(row=7, column=2, columnspan=2)
+        # Version CheckBox
+        varVerCheck = BooleanVar()
+        VerCheck = ttk.Checkbutton(
+            widgets_frame2, text='Version 12.1', variable=varVerCheck, style='Switch')
+        VerCheck.grid(row=6, column=2, columnspan=2, sticky='w', pady=(0, 5))
+
+        # Metadata CheckBox
+        varMetaCheck = BooleanVar()
+        MetaCheck = ttk.Checkbutton(
+            widgets_frame2, text='Metadata Only', variable=varMetaCheck, style='Switch')
+        MetaCheck.grid(row=8, column=2, columnspan=2, sticky='w')
 
         def script():  # Gera o script de Import
             ticket = ticketBox.get()
-            owner = ownerBox.get().upper()
-            senha = SenhaBox.get()
             base_origem = base_origemBox.get()
-            base_destino = base_destinoBox.get().lower()
-            dataNum = dataNumSpin.get()
-            dataFile = int(dataFileSpin.get())
-            List = []
-            if varRemapCheck.get():
-                owner_destino = owner_destinoBox.get().upper()
+            base_destino = base_destinoBox.get()
+            data_num = dataNumSpin.get()
+            caminho = caminhoBox.get()
+
+            if varVerCheck.get():
+                version = " version=12.1"
             else:
-                owner_destino = ownerBox.get().upper()
+                version = ""
 
-            def dataDivid():  # Gera DataFiles adicionais
-                if dataFile > 1:
-                    for i in range(dataFile - 1):
-                        List.append(
-                            f"""ALTER TABLESPACE {owner_destino}_DAT ADD DATAFILE '/storage/{base_destino}/data0{dataNum}/{owner_destino}_DAT{i + 2}.dbf' SIZE 100M AUTOEXTEND ON NEXT 100M; \n""")
-                    return "".join(List)
-                else:
-                    return ""
+            if varMetaCheck.get():
+                metadata = " CONTENT=METADATA_ONLY"
+            else:
+                metadata = ""
 
-            def drop():
-                if varDropCheck.get():  # Adiciona drop_text se Drop estiver com check
-                    drop_text = f"""DROP USER {owner_destino} CASCADE;
-DROP TABLESPACE {owner_destino}_DAT INCLUDING CONTENTS AND DATAFILES;
-DROP TABLESPACE {owner_destino}_IDX INCLUDING CONTENTS AND DATAFILES;
-                """
-                    return drop_text
-                else:
-                    return ""
+            schemas = []
+            schemas_remap = []
+            tablespaces = []
+            drops = []
+            datafiles_comand = []
+            unlock = []
+            remap = ""
+            for ownerData in owners:
+                owner = ownerData["owner_origem"].get().upper()
+                destino = ownerData["owner_destino"].get().upper()
+                senha = ownerData["senha"].get()
+                dataFiles = int(ownerData["data_file_spin"].get())
 
-            def version():
-                if varVerCheck.get():
-                    ver_text = f""" version=12.1"""
-                    return ver_text
-                else:
-                    return ""
+                schemas.append(f"{owner},")
+                schemas_remap.append(f"{owner}:{destino},")
+                tablespaces.append(
+                    f"{owner}_DAT:{destino}_DAT,{owner}_IDX:{destino}_IDX,")
 
-            def remap():
-                if varRemapCheck.get():
-                    remap_text = f" REMAP_SCHEMA={owner}:{owner_destino} REMAP_TABLESPACE={owner}_DAT:{owner_destino}_DAT,{owner}_IDX:{owner_destino}_IDX"
-                    return remap_text
-                else:
-                    return ""
+                if ownerData["var_remap_check"].get():
+                    owner = destino
 
-            def senhafunc():
-                if varSenhaCheck.get():
-                    return senha
-                else:
-                    return owner_destino
+                if not ownerData["var_senha_check"].get():
+                    senha = owner
 
-            def meta():
-                if varMetaCheck.get():
-                    Meta_text = f""" CONTENT=METADATA_ONLY"""
-                    return Meta_text
-                else:
-                    return ""
+                if ownerData["var_drop_check"].get():
+                    drops.append(
+                        f"DROP USER {owner} CASCADE;\nDROP TABLESPACE {owner}_DAT INCLUDING CONTENTS AND DATAFILES;\nDROP TABLESPACE {owner}_IDX INCLUDING CONTENTS AND DATAFILES;\n\n")
 
-            # Subistitui valores no script
-            script = f"""--ORIGEM: {base_origem.upper()}
-export ORACLE_SID={base_origem.lower()}
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-expdp BKP_EXPORT/AxxxM0 directory=DBA schemas={owner} dumpfile={ticket}.dmp logfile=exp_{ticket}.log exclude=statistics{version()}{meta()}
+                datafiles_comand.append(
+                    f"create tablespace {owner}_DAT '{caminho}/{owner}_DAT.dbf' size 100m autoextend on next 100m;\n")
+                for datafile in range(dataFiles-1):
+                    if dataFiles > 1:
+                        datafiles_comand.append(
+                            f"alter tablespace {owner}_DAT add datafile '{caminho}/{owner}_DAT{datafile+2}.dbf' size 100m autoextend on next 100m;\n")
 
---Destino: {base_destino.upper()}
-{drop()}
-create tablespace {owner_destino}_DAT datafile '/storage/{base_destino}/data0{dataNum}/{owner_destino}_DAT.dbf' size 100m autoextend on next 100m;
-{dataDivid()}
-create tablespace {owner_destino}_IDX datafile '/storage/{base_destino}/data0{dataNum}/{owner_destino}_IDX.dbf' size 100m autoextend on next 100m;
+                datafiles_comand.append(
+                    f"create tablespace {owner}_IDX '{caminho}/{owner}_IDX.dbf' size 100m autoextend on next 100m;\n")
+                datafiles_comand.append(
+                    f"create user {owner} identified by {owner} default tablespace {owner}_DAT temporary tablespace TEMP quota unlimited on {owner}_DAT quota unlimited on {owner}_IDX quota 0k on SYSTEM;\n\n")
 
-create user {owner_destino} identified by {senhafunc()} default tablespace {owner_destino}_DAT temporary tablespace TEMP quota unlimited on {owner_destino}_DAT quota unlimited on {owner_destino}_IDX quota 0k on SYSTEM;
+                if ownerData["var_remap_check"].get():
+                    a = "".join(schemas_remap)[:-1].upper()
+                    b = "".join(tablespaces)[:-1].upper()
+                    remap = remap + f" REMAP_SCHEMA={a} REMAP_SCHEMA={b}"
 
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile={ticket}.dmp logfile=imp_{ticket}.log{remap()}
-
-alter user {owner_destino} identified by {senhafunc()} account unlock;
-
+                unlock.append(f"""alter user {owner} identified by {senha} account unlock;\n
 BEGIN
 DBMS_NETWORK_ACL_ADMIN.append_host_ace (
     host       => '*',
     ace        => xs$ace_type(privilege_list => xs$name_list('connect','resolve'),
-                            principal_name => '{owner_destino}',
+                            principal_name => '{owner}',
                             principal_type => XS_ACL.PTYPE_DB));
 END;
-/"""
+/\n\n""")
+
+            script = f"""--ORIGEM: {base_origem.upper()}
+export ORACLE_SID={base_origem.lower()}
+export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
+expdp BKP_EXPORT/AxxxM0 directory=DBA schemas={"".join(schemas)[:-1].upper()} dumpfile={ticket}.dmp logfile=exp_{ticket}.log exclude=statistics{version}{metadata}
+
+--DESTINO: {base_destino.upper()}
+
+{"".join(drops)}{"".join(datafiles_comand)}
+impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile={ticket}.dmp logfile=imp_{ticket}.log{remap}
+
+{"".join(unlock)}
+"""
 
             # Cria ou sobreescreve o aquivo import.txt
             f = open("import.txt", "w+")
@@ -381,15 +624,18 @@ class PageTwo(tk.Frame):
         tabRow = tabelaBox.grid_info()["row"]+1
         tabelas = []
         labels = []
-        
 
         def resetWidgets():
+            rowLen = len(tabelas)+tabRow
             if len(tabelas) > 0:
                 removeTabelasButton.grid_forget()
-                removeTabelasButton.grid(column=1, row=len(tabelas)+tabRow+1, sticky="w", pady=paddingY, padx=(2.5,0))
-                createTabelasButton.grid(column=0, row=len(tabelas)+tabRow+1, sticky="e", pady=paddingY, padx=(0,2.5))
+                removeTabelasButton.grid(column=1, row=len(
+                    tabelas)+tabRow+1, sticky="w", pady=paddingY, padx=(2.5, 0))
+                createTabelasButton.grid(column=0, row=len(
+                    tabelas)+tabRow+1, sticky="e", pady=paddingY, padx=(0, 2.5))
             else:
-                createTabelasButton.grid(column=0, row=len(tabelas)+tabRow+1, columnspan=2, sticky="we", pady=paddingY)
+                createTabelasButton.grid(column=0, row=len(
+                    tabelas)+tabRow+1, columnspan=2, sticky="we", pady=paddingY)
             RemapCheck.grid_forget()
             RemapCheck.grid(row=len(tabelas)+tabRow+2, column=0,
                             columnspan=2, sticky='w', pady=(0, 5))
@@ -407,10 +653,11 @@ class PageTwo(tk.Frame):
             TabelasBox = ttk.Entry(widgets_frame)
             tabelas.append(TabelasBox)
 
-            TabelasBox.grid(column=0, row=len(tabelas)+tabRow, columnspan=2, pady=paddingY, sticky="we")
+            TabelasBox.grid(column=0, row=len(tabelas)+tabRow, columnspan=2,
+                            pady=paddingY, sticky="we")
             label = ttk.Label(widgets_frame, text="Tabela "+str(len(tabelas)+1),
                               font="colortube 11")
-            label.grid(column=0, row=len(tabelas)+tabRow, sticky="nw",
+            label.grid(column=0, row=len(tabelas)+tabRow, columnspan=2, sticky="nw",
                        padx=5)
             labels.append(label)
             resetWidgets()
@@ -424,10 +671,10 @@ class PageTwo(tk.Frame):
 
         createTabelasButton = ttk.Button(
             widgets_frame, text="+ Tabela", command=createtabelas)
-        createTabelasButton.grid(column=0, row=len(tabelas)+tabRow+1, columnspan=2, sticky="we", pady=paddingY)
+        createTabelasButton.grid(column=0, row=len(
+            tabelas)+tabRow+1, columnspan=2, sticky="we", pady=paddingY)
         removeTabelasButton = ttk.Button(
             widgets_frame, text="- Tabela", command=removetabelas)
-        
 
         # Remap CheckBox
         varRemapCheck = BooleanVar()
@@ -457,7 +704,7 @@ class PageTwo(tk.Frame):
 
         # Ticket
         ticketBox = ttk.Entry(widgets_frame2)
-        ticketBox.grid(column=2, row=1, 
+        ticketBox.grid(column=2, row=1,
                        pady=paddingY, sticky="we")
         ticketBoxLabel = ttk.Label(widgets_frame2, text="Nº Ticket", font="colortube 11").grid(column=2, row=1,
                                                                                                sticky="nw",
@@ -466,7 +713,7 @@ class PageTwo(tk.Frame):
         # Base Origem
         base_origemBox = ttk.Entry(widgets_frame2)
         base_origemBox.grid(column=2, row=2, pady=paddingY,
-                             sticky="we")
+                            sticky="we")
         base_origemBoxLabel = ttk.Label(widgets_frame2, text="Base Origem", font="colortube 11").grid(column=2, row=2,
                                                                                                       sticky="nw",
                                                                                                       padx=5)
@@ -476,7 +723,7 @@ class PageTwo(tk.Frame):
         base_destinoBox = ttk.Entry(
             widgets_frame2, textvariable=varBaseDes, width=13)
         base_destinoBox.grid(column=2, row=3, pady=paddingY,
-                              sticky="we")
+                             sticky="we")
         base_destinoBoxLabel = ttk.Label(widgets_frame2, text="Base Destino", font="colortube 11").grid(column=2, row=3,
                                                                                                         sticky="nw",
                                                                                                         padx=5)
@@ -489,9 +736,6 @@ class PageTwo(tk.Frame):
             base_destino = base_destinoBox.get().lower()
             tabListName = []
             tabela = tabListName.append(tabelaBox.get().upper())
-                
-            
-        
 
             def version():
                 if varVerCheck.get():
@@ -516,14 +760,14 @@ class PageTwo(tk.Frame):
 
             for tabNames in tabelas:
                 tabListName.append(tabNames.get().upper())
-          
-                
+
             List = []
-            def tabs(): 
+
+            def tabs():
                 for tabName in tabListName:
                     List.append(f"{owner}.{tabName}, ")
                 return "".join(List)[:-2]
-          
+
             # Subistitui valores no script
             script = f"""--ORIGEM: {base_origem.upper()}
 export ORACLE_SID={base_origem.lower()}
