@@ -1,9 +1,14 @@
 from email.policy import default
 from pickle import FALSE
+from re import A
+from site import USER_BASE
+from time import time
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk, BooleanVar, END
 import os
+import configparser
+
 
 class MainWindow(tk.Tk):
 
@@ -33,7 +38,7 @@ class MainWindow(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageTwo):
+        for F in (Configuration, StartPage, PageOne, PageTwo):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -49,6 +54,199 @@ class MainWindow(tk.Tk):
         '''Show a frame for the given page name'''
         frame = self.frames[page_name]
         frame.tkraise()
+
+
+class Configuration(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        # Create the configuration file if it doesn't exist
+        config = configparser.ConfigParser()
+        if not os.path.exists("config.ini"):
+
+            # Create Max columns and rows section
+            config.add_section('max_rows_columns')
+            config.set('max_rows_columns', 'max_rows', '3')
+            config.set('max_rows_columns', 'max_columns', '2')
+
+            # Create known hosts section
+            config.add_section('known_hosts')
+            config.set('known_hosts', 'value', '')
+
+            # Create credetials section
+            config.add_section('credentials')
+            config.set('credentials', 'user', '')
+            config.set('credentials', 'password', '')
+
+            with open("config.ini", "w") as config_file:
+                config.write(config_file)
+
+        config_obj = configparser.ConfigParser()
+        config_obj.read("config.ini")
+
+        rows_cols = config_obj["max_rows_columns"]
+
+        global MAX_ROWS
+        global MAX_COLS
+        MAX_ROWS = int(rows_cols['max_rows'])
+        MAX_COLS = int(rows_cols['max_columns'])
+
+        global USERNAME
+        global PASSWORD
+
+        USERNAME = config_obj["credentials"]["user"]
+        PASSWORD = config_obj["credentials"]["password"]
+
+        # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
+        paddingY = 10
+        paddingX = 75
+        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
+        titulo = ttk.Label(self, text="Configurações",
+                           font=controller.title_font, foreground="white")
+        titulo.grid(row=0, column=0, pady=20, columnspan=2,
+                    padx=(paddingX, 0))
+
+        # Frame Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
+        widgets_frame = ttk.Frame(self)
+        widgets_frame.grid(row=1, column=0, columnspan=2,
+                           padx=(paddingX, 0))
+
+        # Max Columns and Rows -------------------------------------------------------------------------------------------------------------------
+        subtitle_max_rows_cols = ttk.Label(
+            widgets_frame, text="Max Rows and Columns", font=controller.sub_font, foreground='grey', justify="right")
+        subtitle_max_rows_cols.grid(row=0, column=0, columnspan=2, pady=5)
+
+        # Max Rows
+        max_rows_var = tk.IntVar()
+        max_rows_entry = ttk.Spinbox(widgets_frame, from_=1,
+                                     to=10, textvariable=max_rows_var)
+        max_rows_entry.grid(row=1, column=0, pady=paddingY,
+                            sticky="we", padx=(0, paddingY))
+
+        max_rows_entry.delete(0, END)
+        max_rows_entry.insert(0, MAX_ROWS)
+
+        max_rows_label = ttk.Label(
+            widgets_frame, text="Max Rows", font="colortube 11")
+        max_rows_label.grid(row=max_rows_entry.grid_info()['row'], column=max_rows_entry.grid_info()[
+                            'column'], sticky="nw", padx=5)
+
+        # Max Columns
+        max_cols_var = tk.IntVar()
+        max_cols_entry = ttk.Spinbox(widgets_frame, from_=1,
+                                     to=10, textvariable=max_cols_var)
+        max_cols_entry.grid(row=1, column=1, pady=paddingY, sticky="we")
+
+        max_cols_label = ttk.Label(
+            widgets_frame, text="Max Columns", font="colortube 11")
+        max_cols_label.grid(row=max_cols_entry.grid_info()['row'], column=max_cols_entry.grid_info()[
+                            'column'], sticky="nw", padx=5)
+
+        max_cols_entry.delete(0, END)
+        max_cols_entry.insert(0, MAX_COLS)
+
+        # User Credentials -------------------------------------------------------------------------------------------------------------------------------------
+        labelSubtitle = ttk.Label(widgets_frame, text="Credencias", font=controller.sub_font, foreground='grey',
+                                  justify="center")
+        labelSubtitle.grid(row=2, column=0, columnspan=2,
+                           pady=(paddingY*2, paddingY/2))
+
+        # Usuário
+        varUser = tk.StringVar()
+        user_entry = ttk.Entry(widgets_frame, textvariable=varUser)
+        user_entry.grid(column=0, row=3, pady=paddingY,
+                        sticky="we", padx=(0, paddingY))
+        userBoxLabel = ttk.Label(
+            widgets_frame, text="Usuário", font="colortube 11")
+        userBoxLabel.grid(column=user_entry.grid_info()[
+                          "column"], row=user_entry.grid_info()["row"], sticky="nw", padx=5)
+
+        # Senha
+        varPass = tk.StringVar()
+        password_entry = ttk.Entry(
+            widgets_frame, textvariable=varPass)
+        password_entry.grid(column=1, row=3, pady=paddingY,
+                            sticky="we")
+        passBoxLabel = ttk.Label(
+            widgets_frame, text="Senha", font="colortube 11")
+        passBoxLabel.grid(column=password_entry.grid_info()[
+                          "column"], row=password_entry.grid_info()["row"], sticky="nw", padx=5)
+
+        # delete_credentials function
+        def delete_credentials():
+            config_obj["credentials"]["user"] = ""
+            config_obj["credentials"]["password"] = ""
+            with open("config.ini", "w") as config_file:
+                config_obj.write(config_file)
+            user_entry.delete(0, END)
+            password_entry.delete(0, END)
+
+        # Switch para conectar automaticamente
+        global auto_connect_var
+        auto_connect_var = tk.BooleanVar()
+        auto_connect_switch = ttk.Checkbutton(
+            widgets_frame, text="Auto-connect", variable=auto_connect_var,style='Switch')
+        auto_connect_switch.grid(column=0, row=4, pady=paddingY,
+                                    sticky="we")
+
+        # Botão de apagar credenciais
+        delete_credentials_button = ttk.Button(
+            widgets_frame, text="Deletar Credenciais", command=delete_credentials)
+        delete_credentials_button.grid(column=1, row=4, pady=paddingY,
+                                       sticky="news")
+
+
+
+
+        # update_config function
+
+        def update_config():
+            global MAX_ROWS
+            global MAX_COLS
+            MAX_ROWS = int(max_rows_var.get())
+            MAX_COLS = int(max_cols_var.get())
+            config_obj["max_rows_columns"]["max_rows"] = str(MAX_ROWS)
+            config_obj["max_rows_columns"]["max_columns"] = str(MAX_COLS)
+
+            max_cols_entry.delete(0, END)
+            max_cols_entry.insert(0, MAX_COLS)
+
+            max_rows_entry.delete(0, END)
+            max_rows_entry.insert(0, MAX_ROWS)
+
+            global USERNAME
+            global PASSWORD
+
+            if user_entry.get() != "":
+                USERNAME = user_entry.get()
+                config_obj["credentials"]["user"] = USERNAME
+                user_entry.delete(0, END)
+                user_entry.insert(0, USERNAME)
+                time.sleep(3)
+                user_entry.delete(0, END)
+
+            if password_entry.get() != "":
+                PASSWORD = password_entry.get()
+                config_obj["credentials"]["password"] = PASSWORD
+                password_entry.delete(0, END)
+                password_entry.insert(0, PASSWORD)
+                time.sleep(3)
+                password_entry.delete(0, END)
+
+            with open("config.ini", "w") as config_file:
+                config_obj.write(config_file)
+
+        # Navigation -----------------------------------------------------------------------------------------------------------------------------------------
+        accentbutton = ttk.Button(
+            self, text="Aplicar", style="AccentButton", command=update_config)
+        accentbutton.grid(row=11, column=1, padx=10, pady=(
+            paddingY*4, paddingY/2), sticky='nswe')
+        button = ttk.Button(self, text="Voltar ao início",
+                            command=lambda: controller.show_frame("StartPage"))
+        button.grid(row=11, column=0, padx=(
+            paddingX, 10), pady=(paddingY*4, paddingY/2), sticky='nswe')
 
 
 class StartPage(ttk.Frame):
@@ -67,11 +265,15 @@ class StartPage(ttk.Frame):
 
         button1 = ttk.Button(self, text="Import de Owner", style="AccentButton",
                              command=lambda: controller.show_frame("PageOne"))
+        button1.grid(sticky='we', column=0, row=3, pady=10, padx=20)
+
         button2 = ttk.Button(self, text="Import de Tabela", style="AccentButton",
                              command=lambda: controller.show_frame("PageTwo"))
-        button1.grid(sticky='we', column=0, row=2, pady=10, padx=20)
-        button2.grid(sticky='we', column=0, row=3, pady=10, padx=20)
-        
+        button2.grid(sticky='we', column=0, row=4, pady=10, padx=20)
+
+        button3 = ttk.Button(self, text="Configurações", style="AccentButton",
+                             command=lambda: controller.show_frame("Configuration"))
+        button3.grid(sticky='we', column=0, row=5, pady=10, padx=20)
 
 
 class PageOne(ttk.Frame):
@@ -96,30 +298,16 @@ class PageOne(ttk.Frame):
         # Owners
         global owners
         global MAX_ROWS
+        global MAX_COLS
         global start_col
         global createOwnersButton
         global removeOwnersButton
         global frames
         TESTE = 1
-        MAX_ROWS = 3
-        MAX_COLS = 2
         owners = []
         start_col = -2
         # Frame
         frames = []
-
-        def validate(input):
-            if input.isdigit():
-                print(input)
-                return True
-
-            elif input == "":
-                print(input)
-                return True
-
-            else:
-                print(input)
-                return False
 
         def createFrame():
             global frames
@@ -158,7 +346,8 @@ class PageOne(ttk.Frame):
                     removeOwnersButton.grid(
                         row=8, column=2, columnspan=2, sticky="ew", pady=paddingY)
 
-            print("Final row: " + str(start_row+7), " | Final col: " + str(start_col), " | Final frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"])+"\n")
+            # print("Final row: " + str(start_row+7), " | Final col: " + str(start_col), " | Final frame: " +
+            #      str(frame.grid_info()["column"])+"," + str(frame.grid_info()["row"])+"\n")
             # print(str(MAX_COLS*MAX_ROWS))
             # print(str(len(owners))+"\n")
 
@@ -212,9 +401,7 @@ class PageOne(ttk.Frame):
                            sticky="new", padx=(paddingY, paddingY))
 
             # Owner Origem widget
-            reg = frame.register(validate)
-            owner_origem = ttk.Entry(
-                frame, validate="key", validatecommand=(reg, '%P'))
+            owner_origem = ttk.Entry(frame)
             label_origem = ttk.Label(frame, text="Owner",
                                      font="colortube 11")
             # Owner Destino widget
@@ -290,8 +477,7 @@ class PageOne(ttk.Frame):
             # Separator
             separator.grid(row=start_row, column=0, columnspan=2,
                            sticky='we')
-        
-                
+
             # Owner Origem
             owner_origem.grid(column=0, row=start_row+1, columnspan=2,
                               pady=(paddingY*2.5, paddingY), sticky="we")
@@ -423,7 +609,7 @@ class PageOne(ttk.Frame):
         # Base Destino
         varBaseDes = tk.StringVar()
         base_destinoBox = ttk.Entry(
-            widgets_frame2, textvariable=varBaseDes, width=13)
+            widgets_frame2, textvariable=varBaseDes)
         base_destinoBox.grid(column=2, row=3, sticky="we")
         base_destinoBoxLabel = ttk.Label(widgets_frame2, text="Base Destino", font="colortube 11").grid(column=2, row=3,
                                                                                                         sticky="nw",
@@ -721,7 +907,7 @@ class PageTwo(tk.Frame):
         # Base Destino
         varBaseDes = tk.StringVar()
         base_destinoBox = ttk.Entry(
-            widgets_frame2, textvariable=varBaseDes, width=13)
+            widgets_frame2, textvariable=varBaseDes)
         base_destinoBox.grid(column=2, row=3, pady=paddingY,
                              sticky="we")
         base_destinoBoxLabel = ttk.Label(widgets_frame2, text="Base Destino", font="colortube 11").grid(column=2, row=3,
