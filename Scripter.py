@@ -492,7 +492,7 @@ class PageOne(ttk.Frame):
                        columnspan=2, sticky="we")
             senha.grid_remove()
 
-            label_senha.grid(column=0, row=start_row+1,
+            label_senha.grid(column=0, row=start_row+2,
                              columnspan=2, sticky="nw", padx=5)
             label_senha.grid_remove()
 
@@ -500,14 +500,14 @@ class PageOne(ttk.Frame):
             owner_destino.grid(
                 column=0, row=start_row+3, pady=paddingY, columnspan=2, sticky="we")
             owner_destino.grid_remove()
-            label_destino.grid(column=0, row=start_row+2,
+            label_destino.grid(column=0, row=start_row+3,
                                sticky="nw", columnspan=2, padx=5)
             label_destino.grid_remove()
 
             # Nº DataFiles
             data_file_spin.grid(column=0, row=start_row+4,
                                 pady=paddingY, columnspan=2, sticky="we")
-            data_file_spin_label.grid(column=0, row=start_row+3,
+            data_file_spin_label.grid(column=0, row=start_row+4,
                                       sticky="nw", columnspan=2, padx=(5, 55))
 
             # Senha CheckBox
@@ -664,7 +664,6 @@ class PageOne(ttk.Frame):
             ticket = ticketBox.get()
             base_origem = base_origemBox.get()
             base_destino = base_destinoBox.get()
-            data_num = dataNumSpin.get()
             caminho = caminhoBox.get()
 
             if varVerCheck.get():
@@ -706,23 +705,19 @@ class PageOne(ttk.Frame):
                         f"DROP USER {owner} CASCADE;\nDROP TABLESPACE {owner}_DAT INCLUDING CONTENTS AND DATAFILES;\nDROP TABLESPACE {owner}_IDX INCLUDING CONTENTS AND DATAFILES;\n\n")
 
                 datafiles_comand.append(
-                    f"create tablespace {owner}_DAT '{caminho}/{owner}_DAT.dbf' size 100m autoextend on next 100m;\n")
+                    f"create tablespace {owner}_DAT datafile '{caminho}/{owner}_DAT.dbf' size 100m autoextend on next 100m;\n")
                 for datafile in range(dataFiles-1):
                     if dataFiles > 1:
                         datafiles_comand.append(
                             f"alter tablespace {owner}_DAT add datafile '{caminho}/{owner}_DAT{datafile+2}.dbf' size 100m autoextend on next 100m;\n")
 
                 datafiles_comand.append(
-                    f"create tablespace {owner}_IDX '{caminho}/{owner}_IDX.dbf' size 100m autoextend on next 100m;\n")
+                    f"create tablespace {owner}_IDX datafile '{caminho}/{owner}_IDX.dbf' size 100m autoextend on next 100m;\n")
                 datafiles_comand.append(
                     f"create user {owner} identified by {owner} default tablespace {owner}_DAT temporary tablespace TEMP quota unlimited on {owner}_DAT quota unlimited on {owner}_IDX quota 0k on SYSTEM;\n\n")
 
-                if ownerData["var_remap_check"].get():
-                    a = "".join(schemas_remap)[:-1].upper()
-                    b = "".join(tablespaces)[:-1].upper()
-                    remap = remap + f" REMAP_SCHEMA={a} REMAP_SCHEMA={b}"
-
                 unlock.append(f"""alter user {owner} identified by {senha} account unlock;\n
+
 BEGIN
 DBMS_NETWORK_ACL_ADMIN.append_host_ace (
     host       => '*',
@@ -731,6 +726,11 @@ DBMS_NETWORK_ACL_ADMIN.append_host_ace (
                             principal_type => XS_ACL.PTYPE_DB));
 END;
 /\n\n""")
+            if ownerData["var_remap_check"].get():
+                a = "".join(schemas_remap)[:-1].upper()
+                b = "".join(tablespaces)[:-1].upper()
+                remap = remap + f" REMAP_SCHEMA={a} REMAP_TABLESPACE={b}"
+                
 
             script = f"""--ORIGEM: {base_origem.upper()}
 export ORACLE_SID={base_origem.lower()}

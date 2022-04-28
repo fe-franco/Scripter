@@ -1,24 +1,25 @@
---ORIGEM: 
-export ORACLE_SID=
+--ORIGEM: PAULINIA
+export ORACLE_SID=paulinia
 export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-expdp BKP_EXPORT/AxxxM0 directory=DBA schemas= dumpfile=a.dmp logfile=exp_a.log exclude=statistics
+expdp BKP_EXPORT/AxxxM0 directory=DBA schemas=SIRF_PAULINIA dumpfile=202204280468706.dmp logfile=exp_202204280468706.log exclude=statistics version=12.1 CONTENT=METADATA_ONLY
 
---DESTINO: 
+--DESTINO: HOMOLOGA
 
-create tablespace _DAT '/storage/----/data0-/_DAT.dbf' size 100m autoextend on next 100m;
-create tablespace _IDX '/storage/----/data0-/_IDX.dbf' size 100m autoextend on next 100m;
-create user  identified by  default tablespace _DAT temporary tablespace TEMP quota unlimited on _DAT quota unlimited on _IDX quota 0k on SYSTEM;
+create tablespace CONV_SIRFTAUBATE_DAT datafile '/storage/homologa/data01/CONV_SIRFTAUBATE_DAT.dbf' size 100m autoextend on next 100m;
+create tablespace CONV_SIRFTAUBATE_IDX datafile '/storage/homologa/data01/CONV_SIRFTAUBATE_IDX.dbf' size 100m autoextend on next 100m;
+create user CONV_SIRFTAUBATE identified by CONV_SIRFTAUBATE default tablespace CONV_SIRFTAUBATE_DAT temporary tablespace TEMP quota unlimited on CONV_SIRFTAUBATE_DAT quota unlimited on CONV_SIRFTAUBATE_IDX quota 0k on SYSTEM;
 
 
-impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile=a.dmp logfile=imp_a.log
+impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile=202204280468706.dmp logfile=imp_202204280468706.log REMAP_SCHEMA=SIRF_PAULINIA:CONV_SIRFTAUBATE REMAP_TABLESPACE=SIRF_PAULINIA_DAT:CONV_SIRFTAUBATE_DAT,SIRF_PAULINIA_IDX:CONV_SIRFTAUBATE_IDX
 
-alter user  identified by  account unlock;
+alter user CONV_SIRFTAUBATE identified by CONV_SIRFTAUBATE account unlock;
+
 
 BEGIN
 DBMS_NETWORK_ACL_ADMIN.append_host_ace (
     host       => '*',
     ace        => xs$ace_type(privilege_list => xs$name_list('connect','resolve'),
-                            principal_name => '',
+                            principal_name => 'CONV_SIRFTAUBATE',
                             principal_type => XS_ACL.PTYPE_DB));
 END;
 /
