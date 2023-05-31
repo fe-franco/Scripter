@@ -38,7 +38,7 @@ class MainWindow(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (Configuration, StartPage, PageOne, PageTwo):
+        for F in (Configuration, StartPage, ItensPage, CompanyPage, DadosOng):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -120,13 +120,13 @@ class Configuration(tk.Frame):
 
         # Max Rows
         max_rows_var = tk.IntVar()
-        max_rows_entry = ttk.Spinbox(widgets_frame, from_=1,
+        max_rows_entry = ttk.Spinbox(widgets_frame, from_=2,
                                      to=10, textvariable=max_rows_var)
         max_rows_entry.grid(row=1, column=0, pady=paddingY,
                             sticky="we", padx=(0, paddingY))
 
         max_rows_entry.delete(0, END)
-        max_rows_entry.insert(0, MAX_ROWS)
+        max_rows_entry.insert(0, MAX_ROWS.__str__())
 
         max_rows_label = ttk.Label(
             widgets_frame, text="Max Rows", font="colortube 11")
@@ -145,7 +145,7 @@ class Configuration(tk.Frame):
                             'column'], sticky="nw", padx=5)
 
         max_cols_entry.delete(0, END)
-        max_cols_entry.insert(0, MAX_COLS)
+        max_cols_entry.insert(0, MAX_COLS.__str__())
 
         # User Credentials -------------------------------------------------------------------------------------------------------------------------------------
         labelSubtitle = ttk.Label(widgets_frame, text="Credencias", font=controller.sub_font, foreground='grey',
@@ -176,6 +176,8 @@ class Configuration(tk.Frame):
 
         # delete_credentials function
         def delete_credentials():
+            """Clear the credentials stored in the config file"""
+
             config_obj["credentials"]["user"] = ""
             config_obj["credentials"]["password"] = ""
             with open("config.ini", "w") as config_file:
@@ -187,18 +189,15 @@ class Configuration(tk.Frame):
         global auto_connect_var
         auto_connect_var = tk.BooleanVar()
         auto_connect_switch = ttk.Checkbutton(
-            widgets_frame, text="Auto-connect", variable=auto_connect_var,style='Switch')
+            widgets_frame, text="Auto-connect", variable=auto_connect_var, style='Switch')
         auto_connect_switch.grid(column=0, row=4, pady=paddingY,
-                                    sticky="we")
+                                 sticky="we")
 
         # Botão de apagar credenciais
         delete_credentials_button = ttk.Button(
             widgets_frame, text="Deletar Credenciais", command=delete_credentials)
         delete_credentials_button.grid(column=1, row=4, pady=paddingY,
                                        sticky="news")
-
-
-
 
         # update_config function
 
@@ -211,10 +210,10 @@ class Configuration(tk.Frame):
             config_obj["max_rows_columns"]["max_columns"] = str(MAX_COLS)
 
             max_cols_entry.delete(0, END)
-            max_cols_entry.insert(0, MAX_COLS)
+            max_cols_entry.insert(0, MAX_COLS.__str__())
 
             max_rows_entry.delete(0, END)
-            max_rows_entry.insert(0, MAX_ROWS)
+            max_rows_entry.insert(0, MAX_ROWS.__str__())
 
             global USERNAME
             global PASSWORD
@@ -256,27 +255,23 @@ class StartPage(ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self.controller = controller
         labelTitle = ttk.Label(
-            self, text="Gerador de Scripts", font=controller.title_font, justify="center")
-        labelTitle.grid(sticky='we', column=0, row=0, pady=(20, 0), padx=pad)
-        labelSubtitle = ttk.Label(self, text="Escolha uma opção abaixo", font=controller.sub_font, foreground='grey',
+            self, text="Aidly: Juntos pela\nsolidariedade", font=controller.title_font, justify="center")
+        labelTitle.grid(column=0, row=0, pady=(20, 0), padx=pad)
+        labelSubtitle = ttk.Label(self, text="Bem vindo!\n Escolha uma opção abaixo", font=controller.sub_font, foreground='grey',
                                   justify="center")
-        labelSubtitle.grid(sticky='we', column=0, row=1,
+        labelSubtitle.grid(column=0, row=1,
                            pady=(10, 20), padx=pad + 20)
 
-        button1 = ttk.Button(self, text="Import de Owner", style="AccentButton",
-                             command=lambda: controller.show_frame("PageOne"))
+        button1 = ttk.Button(self, text="Sou uma ONG", style="AccentButton",
+                             command=lambda: controller.show_frame("DadosOng"))
         button1.grid(sticky='we', column=0, row=3, pady=10, padx=20)
 
-        button2 = ttk.Button(self, text="Import de Tabela", style="AccentButton",
-                             command=lambda: controller.show_frame("PageTwo"))
+        button2 = ttk.Button(self, text="Sou uma Empresa", style="AccentButton",
+                             command=lambda: controller.show_frame("CompanyPage"))
         button2.grid(sticky='we', column=0, row=4, pady=10, padx=20)
 
-        button3 = ttk.Button(self, text="Configurações", style="AccentButton",
-                             command=lambda: controller.show_frame("Configuration"))
-        button3.grid(sticky='we', column=0, row=5, pady=10, padx=20)
 
-
-class PageOne(ttk.Frame):
+class ItensPage(ttk.Frame):
 
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
@@ -286,7 +281,7 @@ class PageOne(ttk.Frame):
         paddingY = 10
 
         # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
-        titulo = ttk.Label(self, text="Import de Owner",
+        titulo = ttk.Label(self, text="Criação de Requerimentos",
                            font=controller.title_font, foreground="white")
         titulo.grid(row=0, column=0, pady=20, columnspan=4)
 
@@ -296,15 +291,15 @@ class PageOne(ttk.Frame):
                            padx=(paddingY, paddingY))
 
         # Owners
-        global owners
+        global items
         global MAX_ROWS
         global MAX_COLS
         global start_col
-        global createOwnersButton
-        global removeOwnersButton
+        global createItem
+        global removeItem
         global frames
-        TESTE = 1
-        owners = []
+        STARTING = 1
+        items = []
         start_col = -2
         # Frame
         frames = []
@@ -315,355 +310,284 @@ class PageOne(ttk.Frame):
             frames.append(defaultFrame)
 
         def resetWidgets(start_row, start_col, frame):
-            global createOwnersButton
-            global removeOwnersButton
+            global createItem
+            global removeItem
 
-            createOwnersButton = ttk.Button(
-                frame, text="+ Owner", command=createOwners)
-            removeOwnersButton = ttk.Button(
-                frame, text="- Owner", command=removeOwners)
+            createItem = ttk.Button(
+                frame, text="+ Item", command=createItems)
+            removeItem = ttk.Button(
+                frame, text="- Item", command=removeItems)
 
-            if len(owners) > 1:
-                removeOwnersButton.grid(
+            if len(items) > 1:
+                removeItem.grid(
                     column=1+start_col, row=start_row+9, sticky="nwe", pady=paddingY*2.5, padx=(2.5, 0))
-                createOwnersButton.grid(
+                createItem.grid(
                     column=start_col, row=start_row+9, sticky="new", pady=paddingY*2.5, padx=(0, 2.5))
             else:
-                removeOwnersButton.grid_forget()
-                createOwnersButton.grid(
+                removeItem.grid_forget()
+                createItem.grid(
                     column=start_col, row=start_row+9, columnspan=2, sticky="new", pady=paddingY*2.5)
 
             if start_col == 2:
-                createOwnersButton.grid_configure(
+                createItem.grid_configure(
                     padx=(paddingY*2, 2.5), pady=paddingY)
-                removeOwnersButton.grid_configure(pady=paddingY)
-                if MAX_COLS*MAX_ROWS == len(owners):
-                    print("Não é possível adicionar mais owners")
-                    createOwnersButton.grid_forget()
-                    removeOwnersButton.grid_forget()
-                    removeOwnersButton = ttk.Button(
-                        widgets_frame2, text="- Owner", command=removeOwners)
-                    removeOwnersButton.grid(
+                removeItem.grid_configure(pady=paddingY)
+                if MAX_COLS*MAX_ROWS == len(items):
+                    print("Não é possível adicionar mais itens")
+                    createItem.grid_forget()
+                    removeItem.grid_forget()
+                    removeItem = ttk.Button(
+                        widgets_frame2, text="- Items", command=removeItems)
+                    removeItem.grid(
                         row=8, column=2, columnspan=2, sticky="ew", pady=paddingY)
 
-            # print("Final row: " + str(start_row+7), " | Final col: " + str(start_col), " | Final frame: " +
-            #      str(frame.grid_info()["column"])+"," + str(frame.grid_info()["row"])+"\n")
-            # print(str(MAX_COLS*MAX_ROWS))
-            # print(str(len(owners))+"\n")
 
-        def createOwners():
+        def createItems():
             global start_col
             global MAX_ROWS
-            global owners
-            if MAX_COLS*MAX_ROWS == len(owners):
+            global items
+            if MAX_COLS*MAX_ROWS == len(items):
                 return
 
-            createOwnersButton.grid_forget()
-            removeOwnersButton.grid_forget()
+            createItem.grid_forget()
+            removeItem.grid_forget()
 
-            # Mostrar ou esconder Senha
-            def toggleSenha():
-                if var_senha_check.get():
-                    senha.grid()
-                    label_senha.grid()
-                else:
-                    senha.grid_remove()
-                    label_senha.grid_remove()
+            start_row = (len(items) % MAX_ROWS) * 8
 
-            # Mostrar ou esconder Owner Destino
-            def toggleRemap():
-                if var_remap_check.get():
-                    my_string = label_origem.config()["text"][4]
-                    split_strings = my_string.split()
-                    split_strings.insert(1, 'Origem')
-                    label_origem.config(text=split_strings)
-                    owner_destino.grid()
-                    label_destino.grid()
-                else:
-                    my_string = label_origem.config()["text"][4]
-                    split_strings = my_string.split()
-                    split_strings.pop(1)
-                    label_origem.config(text=split_strings)
-                    owner_destino.grid_remove()
-                    label_destino.grid_remove()
-
-            start_row = (len(owners) % MAX_ROWS) * 8
-            #print("Remainder of "+str(MAX_ROWS)+": "+str((len(owners)) % MAX_ROWS))
-            #print(str((len(owners)) % MAX_ROWS)+"*7 = "+str(start_row))
-            if len(owners) % MAX_ROWS == 0:
+            if len(items) % MAX_ROWS == 0:
                 start_col += 2
                 createFrame()
 
             frame = frames[len(frames) - 1]
 
-            if len(owners) % MAX_ROWS == 0:
+            if len(items) % MAX_ROWS == 0:
                 frame.grid(row=start_row, column=start_col,
                            sticky="new", padx=(paddingY, paddingY))
 
-            # Owner Origem widget
-            owner_origem = ttk.Entry(frame)
-            label_origem = ttk.Label(frame, text="Owner",
-                                     font="colortube 11")
-            # Owner Destino widget
-            owner_destino = ttk.Entry(frame)
-            label_destino = ttk.Label(frame, text="Owner Destino",
-                                      font="colortube 11")
+            # Nome do item widget
+            nome_item = ttk.Entry(frame)
+            label_nome_produto = ttk.Label(frame, text="Nome do item",
+                                           font="colortube 11")
+            # Categoria widget
+            categoria = ttk.Entry(frame)
+            label_categoria = ttk.Label(frame, text="Categoria",
+                                        font="colortube 11")
 
-            # Senha widget
-            senha = ttk.Entry(frame)
-            label_senha = ttk.Label(frame, text="Senha",
-                                    font="colortube 11")
-
-            # Senha CheckBox widget
-            var_senha_check = tk.BooleanVar()
-            senha_check = ttk.Checkbutton(frame, variable=var_senha_check, text="Senha", command=toggleSenha,
-                                          style='Switch')
-            # Remap CheckBox widget
-            var_remap_check = tk.BooleanVar()
-            remap_check = ttk.Checkbutton(frame, text='Remap Owner', variable=var_remap_check, command=toggleRemap,
-                                          style='Switch')
-
-            # Drop CheckBox widget
-            var_drop_check = BooleanVar()
-            drop_check = ttk.Checkbutton(
-                frame, text='Dropar Owner', variable=var_drop_check, style='Switch')
-
-            # Nº DataFiles widget
-            var_data = tk.IntVar()
-            data_file_spin = ttk.Spinbox(
-                frame, from_=1, to=99, width=5, textvariable=var_data)
-            data_file_spin_label = ttk.Label(
-                frame, text='N° de DataFiles', font="colortube 11")
+            # Quantidade widget
+            var_quantidade = tk.IntVar()
+            quantidade = ttk.Spinbox(
+                frame, from_=1, to=99, width=5, textvariable=var_quantidade)
+            quantidade_label = ttk.Label(
+                frame, text='Quantidade', font="colortube 11")
 
             # Separator
             separator = ttk.Separator(frame, orient="horizontal")
 
-            owners.append({
+            items.append({
                 "frame": frame,
-                "owner_origem": owner_origem,
-                "label_origem": label_origem,
-                "owner_destino": owner_destino,
-                "label_destino": label_destino,
-                "senha_check": senha_check,
-                "senha": senha,
-                "label_senha": label_senha,
-                "var_senha_check": var_senha_check,
-                "remap_check": remap_check,
-                "var_remap_check": var_remap_check,
-                "drop_check": drop_check,
-                "var_drop_check": var_drop_check,
-                "data_file_spin": data_file_spin,
-                "data_file_spin_label": data_file_spin_label,
-                "var_data": var_data,
+                "nome_item": nome_item,
+                "label_nome_item": label_nome_produto,
+                "categoria": categoria,
+                "label_categoria": label_categoria,
+                "quantidade": quantidade,
+                "quantidade_label": quantidade_label,
+                "var_quantidade": var_quantidade,
                 "separator": separator
             })
             # Changes labels based on owner count
-            if len(owners) > 1:
-                owners[0]["label_origem"].configure(text="Owner 1")
-                owners[0]["label_destino"].configure(text="Owner Destino 1")
-                owners[0]["label_senha"].configure(text="Senha 1")
-                owners[0]["data_file_spin_label"].configure(
-                    text="N° de DataFiles 1")
-                label_origem.config(text="Owner "+str(len(owners)))
-                label_destino.config(text="Owner Destino "+str(len(owners)))
-                label_senha.config(text="Senha "+str(len(owners)))
-                data_file_spin_label.config(
-                    text='N° de DataFiles '+str(len(owners)))
-                owners[0]["separator"].grid()
-
-                if owners[0]["var_remap_check"].get():
-                    owners[0]["label_origem"].configure(text="Owner Origem 1")
+            if len(items) > 1:
+                items[0]["label_nome_item"].configure(text="Nome item 1")
+                items[0]["label_categoria"].configure(text="Categoria 1")
+                items[0]["quantidade_label"].configure(
+                    text="Quantidade 1")
+                label_nome_produto.config(text="Nome item "+str(len(items)))
+                label_categoria.config(text="Categoria "+str(len(items)))
+                quantidade_label.config(
+                    text='Quantidade '+str(len(items)))
+                items[0]["separator"].grid()
 
             # Separator
             separator.grid(row=start_row, column=0, columnspan=2,
                            sticky='we')
 
-            # Owner Origem
-            owner_origem.grid(column=0, row=start_row+1, columnspan=2,
-                              pady=(paddingY*2.5, paddingY), sticky="we")
-            label_origem.grid(column=0, row=start_row+1, columnspan=2, sticky="nw",
-                              padx=5, pady=paddingY*((owner_origem.grid_info()["pady"][0]/paddingY)-1))
-            if len(owners) % MAX_ROWS == 1:
-                owner_origem.grid_configure(pady=paddingY)
-                label_origem.grid_configure(pady=0, padx=5)
-
-            # Senha
-            senha.grid(column=0, row=start_row+2, pady=paddingY,
-                       columnspan=2, sticky="we")
-            senha.grid_remove()
-
-            label_senha.grid(column=0, row=start_row+2,
-                             columnspan=2, sticky="nw", padx=5)
-            label_senha.grid_remove()
+            # Nome item Origem
+            nome_item.grid(column=0, row=start_row+1, columnspan=2,
+                           pady=(paddingY*2.5, paddingY), sticky="we")
+            label_nome_produto.grid(column=0, row=start_row+1, columnspan=2, sticky="nw",
+                                    padx=5, pady=paddingY*((nome_item.grid_info()["pady"][0]/paddingY)-1))
+            if len(items) % MAX_ROWS == 1:
+                nome_item.grid_configure(pady=paddingY)
+                label_nome_produto.grid_configure(pady=0, padx=5)
 
             # Owner Destino
-            owner_destino.grid(
+            categoria.grid(
                 column=0, row=start_row+3, pady=paddingY, columnspan=2, sticky="we")
-            owner_destino.grid_remove()
-            label_destino.grid(column=0, row=start_row+3,
-                               sticky="nw", columnspan=2, padx=5)
-            label_destino.grid_remove()
+            label_categoria.grid(column=0, row=start_row+3,
+                                 sticky="nw", columnspan=2, padx=5)
 
-            # Nº DataFiles
-            data_file_spin.grid(column=0, row=start_row+4,
-                                pady=paddingY, columnspan=2, sticky="we")
-            data_file_spin_label.grid(column=0, row=start_row+4,
-                                      sticky="nw", columnspan=2, padx=(5, 55))
+            # Quantidade
+            quantidade.grid(column=0, row=start_row+4,
+                            pady=(paddingY, paddingY*2), columnspan=2, sticky="we")
+            quantidade_label.grid(column=0, row=start_row+4,
+                                  sticky="nw", columnspan=2, padx=(5, 55))
 
-            # Senha CheckBox
-            senha_check.grid(column=0, row=start_row+5,
-                             columnspan=2, sticky='w', pady=(0, paddingY/2))
-
-            # Remap CheckBox
-            remap_check.grid(column=0, row=start_row+6,
-                             columnspan=2, sticky='w', pady=(0, paddingY/2))
-
-            # Drop CheckBox
-            drop_check.grid(column=0, row=start_row+7,
-                            columnspan=2, sticky='w', pady=(0, paddingY*2.5))
-
-            if len(owners) % MAX_ROWS == 1:
+            # Remover separador no ultimo item
+            if len(items) % MAX_ROWS == 1:
                 separator.grid_forget()
 
             bstart_col = 0
             bstart_row = start_row
-            if len(owners) % MAX_ROWS == 0:
+            if len(items) % MAX_ROWS == 0:
                 bstart_col = 2
                 bstart_row = -8
 
-            #print("Start row: " + str(bstart_row), " | Start col: " + str(start_col), " | Start frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"]))
+            # print("Start row: " + str(bstart_row), " | Start col: " + str(start_col), " | Start frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"]))
             resetWidgets(bstart_row, bstart_col, frame)
 
-        def removeOwners():
-            createOwnersButton.grid_forget()
-            removeOwnersButton.grid_forget()
-            # offset row by lenght of owners
-            owner = owners.pop()
-            owner["owner_origem"].grid_forget()
-            owner["label_origem"].grid_forget()
-            owner["owner_destino"].grid_forget()
-            owner["label_destino"].grid_forget()
-            owner["senha_check"].grid_forget()
-            owner["senha"].grid_forget()
-            owner["label_senha"].grid_forget()
-            owner["remap_check"].grid_forget()
-            owner["drop_check"].grid_forget()
-            owner["data_file_spin"].grid_forget()
-            owner["data_file_spin_label"].grid_forget()
+        def removeItems():
+            createItem.grid_forget()
+            removeItem.grid_forget()
+            # offset row by lenght of items
+            owner = items.pop()
+            owner["nome_item"].grid_forget()
+            owner["label_nome_item"].grid_forget()
+            owner["categoria"].grid_forget()
+            owner["label_categoria"].grid_forget()
+            owner["quantidade"].grid_forget()
+            owner["quantidade_label"].grid_forget()
             owner["separator"].grid_forget()
 
-            start_row = ((len(owners)) % MAX_ROWS) * 8
+            start_row = ((len(items)) % MAX_ROWS) * 8
             bstart_col = 0
-            #print("Remainder of "+str(MAX_ROWS)+": "+str((len(owners)) % MAX_ROWS))
-            #print(str((len(owners)) % MAX_ROWS)+"*7 = "+str(start_row))
 
-            if len(owners) < 2:
-                owners[0]["label_origem"].configure(text="Owner")
-                owners[0]["label_destino"].configure(text="Owner Destino")
-                owners[0]["label_senha"].configure(text="Senha")
-                owners[0]["data_file_spin_label"].configure(
-                    text="N° de DataFiles")
-                if owners[0]["var_remap_check"].get():
-                    owners[0]["label_origem"].configure(text="Owner Origem")
+            if len(items) < 2:
+                items[0]["label_nome_item"].configure(text="Nome item")
+                items[0]["label_categoria"].configure(text="Categoria")
+                items[0]["quantidade_label"].configure(
+                    text="Quantidade")
 
             bstart_row = start_row
-            if len(owners) % MAX_ROWS == 0:
+            if len(items) % MAX_ROWS == 0:
                 frames.pop().grid_forget()
                 bstart_col = 2
                 bstart_row = -8
 
             frame = frames[len(frames) - 1]
 
-            #print("Start row: " + str(bstart_row), " | Start col: " + str(start_col), " | Start frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"]))
             resetWidgets(bstart_row, bstart_col, frame)
 
-        createOwnersButton = ttk.Button(
-            widgets_frame, text="+ Owner", command=createOwners)
-        createOwnersButton.grid(
+        createItem = ttk.Button(
+            widgets_frame, text="+ Item", command=createItems)
+        createItem.grid(
             column=0, row=7, columnspan=2, sticky="we", pady=paddingY)
-        removeOwnersButton = ttk.Button(
-            widgets_frame, text="- Owner", command=removeOwners)
+        removeItem = ttk.Button(
+            widgets_frame, text="- Item", command=removeItems)
 
         # Frame Coluna 2    -----------------------------------------------------------------------------------------------------------------------------------
         widgets_frame2 = tk.Frame(self)
         widgets_frame2.grid(row=1, column=1, sticky='nw',
                             padx=(paddingY, paddingY + 15))  # Cria widgets_frame2 na janela
-        for i in range(TESTE):
-            createOwners()
-        # Ticket
-        ticketBox = ttk.Entry(widgets_frame2)
-        ticketBox.grid(column=2, row=1, columnspan=2,
-                       pady=paddingY, sticky="we")
-        ticketBoxLabel = ttk.Label(widgets_frame2, text="Nº Ticket", font="colortube 11").grid(column=2, row=1,
-                                                                                               sticky="nw",
-                                                                                               padx=5)
+        createItems()
 
-        # Base Origem
-        base_origemBox = ttk.Entry(widgets_frame2)
-        base_origemBox.grid(column=2, row=2, pady=paddingY,
-                            columnspan=2, sticky="we")
-        base_origemBoxLabel = ttk.Label(widgets_frame2, text="Base Origem", font="colortube 11").grid(column=2, row=2,
-                                                                                                      sticky="nw",
-                                                                                                      padx=5)
+        # Nome da ONG
+        nome_ong = ttk.Entry(widgets_frame2)
+        nome_ong.grid(column=2, row=1, columnspan=2,
+                      pady=paddingY, sticky="we")
+        nome_ong_label = ttk.Label(
+            widgets_frame2, text="Nome da ONG", font="colortube 11")
+        nome_ong_label.grid(column=2, row=1,
+                            sticky="nw",
+                            padx=5)
 
-        # Base Destino
-        varBaseDes = tk.StringVar()
-        base_destinoBox = ttk.Entry(
-            widgets_frame2, textvariable=varBaseDes)
-        base_destinoBox.grid(column=2, row=3, sticky="we")
-        base_destinoBoxLabel = ttk.Label(widgets_frame2, text="Base Destino", font="colortube 11").grid(column=2, row=3,
-                                                                                                        sticky="nw",
-                                                                                                        padx=5)
+        # CNPJ
+        cnpj_var = tk.StringVar()
+        cnpj = ttk.Entry(widgets_frame2, textvariable=cnpj_var)
+        cnpj.grid(column=2, row=2, pady=paddingY,
+                  columnspan=2, sticky="we")
+        cnpj_label = ttk.Label(
+            widgets_frame2, text="CNPJ", font="colortube 11")
+        cnpj_label.grid(column=2, row=2,
+                        sticky="nw",
+                        padx=5)
+        
+        def format_cnpj():  # Formata o CNPJ para o padrão 00.000.000/0000-00
+            s = cnpj_var.get()
+            # remove todos os caracteres e letras que não são números
+            s = s.replace('.', '')
+            s = s.replace('(', '')
+            s = s.replace(')', '')
+            s = s.replace('-', '')
+            s = s.replace(' ', '')
+            s = s.replace('/', '')
+            # adiciona os pontos e traços
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 3:
+                s = s[:2] + '.' + s[2:]
+            elif len(s) < 6:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:]
+            elif len(s) < 9:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + s[8:]
+            elif len(s) < 13:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
+                    s[8:12] + '-' + s[12:]
+            else:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
+                    s[8:12] + '-' + s[12:14]
+                
+            cnpj_var.set(s)
 
-        # DataNum
-        varDataNum = tk.StringVar()
-        dataNumSpin = ttk.Spinbox(
-            widgets_frame2, from_=1, to=99, width=5, textvariable=varDataNum)
-        dataNumSpin.grid(column=3, row=3, sticky="we", pady=paddingY)
+            # atualizar texto dentro do Entry
+            cnpj.icursor(len(s))
 
-        # Caminho
-        def resize(*args):  # Atuliza width da caminhoBox baseado no texto
-            text = ("/storage/" + varBaseDes.get().lower() +
-                    "/data0" + varDataNum.get())
-            caminhoBox.configure(state='enabled')
-            caminhoBox.delete(0, 'end')
-            widget_width = 0
-            if len(text) != widget_width:
-                widget_width = len(text) + 1
-                caminhoBox.insert(END, text)
-                caminhoBox.configure(width=widget_width, state='disabled')
-                caminhoBox.grid(row=5, column=2, pady=10, sticky='we')
+        # Listener para formatar CNPJ
+        cnpj_var.trace('w', format_cnpj)
 
-        caminhoBox = ttk.Entry(widgets_frame2, justify='center')
-        caminhoBox.insert(0, "/storage/----/data0-")
-        caminhoBox.configure(state='disabled')
-        caminhoBoxLabel = ttk.Label(
-            widgets_frame2, text='Caminho DataFiles', font="colortube 11")
-        caminhoBoxLabel.grid(row=5, column=2, sticky="nw", padx=5)
-        caminhoBox.grid(row=5, column=2, columnspan=2, pady=10, sticky='we')
+        # Telefone
+        telefone_var = tk.StringVar()
+        telefone = ttk.Entry(
+            widgets_frame2, textvariable=telefone_var)
+        telefone.grid(column=2, row=3, sticky="we", pady=paddingY)
+        telefone_label = ttk.Label(
+            widgets_frame2, text="Telefone", font="colortube 11")
+        telefone_label.grid(column=2, row=3,
+                            sticky="nw",
+                            padx=5)
 
-        # Listener para varBaseDes chama função resize
-        varBaseDes.trace('w', resize)
+       
 
-        # Listener para varDataNum chama função resize
-        varDataNum.trace('w', resize)
+        def format_phone():  # Formata o telefone para (xx) xxxx-xxxx
+            s = telefone_var.get()
+            # remove todos os caracteres e letras que não são números
+            s = s.replace('.', '')
+            s = s.replace('(', '')
+            s = s.replace(')', '')
+            s = s.replace('-', '')
+            s = s.replace(' ', '')
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 3:
+                s = '(' + s + ')'
+            elif len(s) < 7:
+                s = '(' + s[:2] + ') ' + s[2:]
+            elif len(s) < 11:
+                s = '(' + s[:2] + ') ' + s[2:6] + '-' + s[6:]
+            else:
+                s = '(' + s[:2] + ') ' + s[2:7] + '-' + s[7:11]
+            telefone_var.set(s)
 
-        # Version CheckBox
-        varVerCheck = BooleanVar()
-        VerCheck = ttk.Checkbutton(
-            widgets_frame2, text='Version 12.1', variable=varVerCheck, style='Switch')
-        VerCheck.grid(row=6, column=2, columnspan=2, sticky='w', pady=(0, 5))
+            # atualizar texto dentro do Entry
+            telefone.icursor(len(s))
 
-        # Metadata CheckBox
-        varMetaCheck = BooleanVar()
-        MetaCheck = ttk.Checkbutton(
-            widgets_frame2, text='Metadata Only', variable=varMetaCheck, style='Switch')
-        MetaCheck.grid(row=8, column=2, columnspan=2, sticky='w')
+        # Listener para formatar telefone
+        telefone_var.trace('w', format_phone)
+
+
 
         def script():  # Gera o script de Import
-            ticket = ticketBox.get()
-            base_origem = base_origemBox.get()
-            base_destino = base_destinoBox.get()
+            ticket = nome_ong.get()
+            base_origem = cnpj.get()
+            base_destino = telefone.get()
             caminho = caminhoBox.get()
 
             if varVerCheck.get():
@@ -683,7 +607,7 @@ class PageOne(ttk.Frame):
             datafiles_comand = []
             unlock = []
             remap = ""
-            for ownerData in owners:
+            for ownerData in items:
                 owner = ownerData["owner_origem"].get().upper()
                 destino = ownerData["owner_destino"].get().upper()
                 senha = ownerData["senha"].get()
@@ -730,7 +654,6 @@ END;
                 a = "".join(schemas_remap)[:-1].upper()
                 b = "".join(tablespaces)[:-1].upper()
                 remap = remap + f" REMAP_SCHEMA={a} REMAP_TABLESPACE={b}"
-                
 
             script = f"""--ORIGEM: {base_origem.upper()}
 export ORACLE_SID={base_origem.lower()}
@@ -740,6 +663,7 @@ expdp BKP_EXPORT/AxxxM0 directory=DBA schemas={"".join(schemas)[:-1].upper()} du
 --DESTINO: {base_destino.upper()}
 
 {"".join(drops)}{"".join(datafiles_comand)}
+export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
 impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile={ticket}.dmp logfile=imp_{ticket}.log{remap}
 
 {"".join(unlock)}
@@ -752,14 +676,130 @@ impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile={ticket}.dmp logfile=imp_{ticket}
             os.startfile("import.txt")  # Abre o arquivo import.txt
 
         accentbutton = ttk.Button(
-            self, text="Gerar", style="AccentButton", command=script)
+            self, text="Proximo Paço", style="AccentButton", command=lambda: controller.show_frame("DadosOng"))
         accentbutton.grid(row=11, column=1, padx=10, pady=20, sticky='nswe')
         button = ttk.Button(self, text="Voltar ao início",
                             command=lambda: controller.show_frame("StartPage"))
         button.grid(row=11, column=0, padx=10, pady=20, sticky='nswe')
 
 
-class PageTwo(tk.Frame):
+class DadosOng(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
+        paddingY = 10
+
+        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
+        titulo = ttk.Label(self, text="Cadastro de ONG",
+                           font=controller.title_font, foreground="white")
+        titulo.grid(row=0, column=0, pady=20, columnspan=4)
+
+        # Frame Coluna 1   -----------------------------------------------------------------------------------------------------------------------------------
+        widgets_frame = tk.Frame(self)
+        widgets_frame.grid(row=1, column=1, sticky='nw',
+                            padx=(paddingY, paddingY + 15))  # Cria widgets_frame2 na janela
+
+        # Nome da ONG
+        nome_ong = ttk.Entry(widgets_frame)
+        nome_ong.grid(column=2, row=1, columnspan=2,
+                      pady=paddingY, sticky="we")
+        nome_ong_label = ttk.Label(
+            widgets_frame, text="Nome da ONG", font="colortube 11")
+        nome_ong_label.grid(column=2, row=1,
+                            sticky="nw",
+                            padx=5)
+
+        # CNPJ
+        cnpj_var = tk.StringVar()
+        cnpj = ttk.Entry(widgets_frame, textvariable=cnpj_var)
+        cnpj.grid(column=2, row=2, pady=paddingY,
+                  columnspan=2, sticky="we")
+        cnpj_label = ttk.Label(
+            widgets_frame, text="CNPJ", font="colortube 11")
+        cnpj_label.grid(column=2, row=2,
+                        sticky="nw",
+                        padx=5)
+        
+        def format_cnpj():  # Formata o CNPJ para o padrão 00.000.000/0000-00
+            s = cnpj_var.get()
+            # remove todos os caracteres e letras que não são números
+            s = s.replace('.', '')
+            s = s.replace('(', '')
+            s = s.replace(')', '')
+            s = s.replace('-', '')
+            s = s.replace(' ', '')
+            s = s.replace('/', '')
+            # adiciona os pontos e traços
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 3:
+                s = s[:2] + '.' + s[2:]
+            elif len(s) < 6:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:]
+            elif len(s) < 9:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + s[8:]
+            elif len(s) < 13:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
+                    s[8:12] + '-' + s[12:]
+            else:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
+                    s[8:12] + '-' + s[12:14]
+                
+            cnpj_var.set(s)
+
+            # atualizar texto dentro do Entry
+            cnpj.icursor(len(s))
+
+        # Listener para formatar CNPJ
+        cnpj_var.trace('w', format_cnpj)
+
+        # Telefone
+        telefone_var = tk.StringVar()
+        telefone = ttk.Entry(
+            widgets_frame, textvariable=telefone_var)
+        telefone.grid(column=2, row=3, sticky="we", pady=paddingY)
+        telefone_label = ttk.Label(
+            widgets_frame, text="Telefone", font="colortube 11")
+        telefone_label.grid(column=2, row=3,
+                            sticky="nw",
+                            padx=5)
+
+       
+
+        def format_phone():  # Formata o telefone para (xx) xxxx-xxxx
+            s = telefone_var.get()
+            # remove todos os caracteres e letras que não são números
+            s = s.replace('.', '')
+            s = s.replace('(', '')
+            s = s.replace(')', '')
+            s = s.replace('-', '')
+            s = s.replace(' ', '')
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 3:
+                s = '(' + s + ')'
+            elif len(s) < 7:
+                s = '(' + s[:2] + ') ' + s[2:]
+            elif len(s) < 11:
+                s = '(' + s[:2] + ') ' + s[2:6] + '-' + s[6:]
+            else:
+                s = '(' + s[:2] + ') ' + s[2:7] + '-' + s[7:11]
+            telefone_var.set(s)
+
+            # atualizar texto dentro do Entry
+            telefone.icursor(len(s))
+
+        # Listener para formatar telefone
+        telefone_var.trace('w', format_phone)
+      
+
+
+
+
+class CompanyPage(tk.Frame):
 
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
@@ -893,8 +933,8 @@ class PageTwo(tk.Frame):
         ticketBox.grid(column=2, row=1,
                        pady=paddingY, sticky="we")
         ticketBoxLabel = ttk.Label(widgets_frame2, text="Nº Ticket", font="colortube 11").grid(column=2, row=1,
-                                                                                               sticky="nw",
-                                                                                               padx=5)
+                                                                                                sticky="nw",
+                                                                                                padx=5)
 
         # Base Origem
         base_origemBox = ttk.Entry(widgets_frame2)
