@@ -8,74 +8,74 @@ from tkinter import font as tkfont
 from tkinter import ttk, BooleanVar, END
 import os
 import configparser
+import json
 
 
-class MainWindow(tk.Tk):
+class JanelaPrincipal(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.title("Scripter")
+        self.title("Aidly")
         self.iconbitmap("logo.ico")
         self.option_add("*tearOff", False)
         self.resizable(False, False)
-        style = ttk.Style(self)
-        # Import the tcl file
+        estilo = ttk.Style(self)
+        # Importar o arquivo tcl
         self.tk.call("source", "proxttk-dark.tcl")
-        # Set the theme with the theme_use method
-        style.theme_use("proxttk-dark")
+        # Definir o tema com o método theme_use
+        estilo.theme_use("proxttk-dark")
 
         self.title_font = tkfont.Font(family='colortube', size=20)
         self.sub_font = tkfont.Font(family='colortube', size=12)
         self.button_font = tkfont.Font(family='colortube', weight="bold")
 
-        # the container is where we'll stack a bunch of frames
-        # on top of each other, then the one we want visible
-        # will be raised above the others
-        container = tk.Frame(self)
-        container.grid(row=0, column=0)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
+        # self.container é onde será desenhado os quadros
+        self.container = tk.Frame(self)
+        self.container.grid(row=0, column=0)
+        self.container.grid_rowconfigure(0, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
 
-        self.frames = {}
-        for F in (Configuration, StartPage, DadosOng, ItensPage):
-            page_name = F.__name__
-            frame = F(parent=container, controller=self)
-            self.frames[page_name] = frame
+        self.container.pack(side="top", fill="both", expand=True)
+        self.current_frame = None
 
-            # put all of the pages in the same location;
-            # the one on the top of the stacking order
-            # will be the one that is visible.
-            frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.mostrar_quadro("PaginaConfiguracoes")
+        self.mostrar_quadro("PaginaInicial")
 
-        self.show_frame("StartPage")
+    def mostrar_quadro(self, nome_pagina):
+        # criar a nova página e embalá-la no container
+        if globals().get(nome_pagina) is not None:
+            # destruir a página antiga, se houver
+            if self.current_frame is not None:
+                self.current_frame.destroy()
 
-    def show_frame(self, page_name):
-        '''Show a frame for the given page name'''
-        frame = self.frames[page_name]
-        frame.tkraise()
+            cls = globals()[nome_pagina]
+            self.current_frame = cls(self.container, self)
+            self.current_frame.pack(fill="both", expand=True)
+        else:
+            raise ValueError("A página %s não foi encontrada" % nome_pagina)
 
 
-class Configuration(tk.Frame):
+class PaginaConfiguracoes(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
 
-        # Create the configuration file if it doesn't exist
+        # Criar o arquivo de configuração se ele não existir
         config = configparser.ConfigParser()
         if not os.path.exists("config.ini"):
 
-            # Create Max columns and rows section
+            # Criar a seção de número máximo de linhas e colunas
             config.add_section('max_rows_columns')
             config.set('max_rows_columns', 'max_rows', '3')
             config.set('max_rows_columns', 'max_columns', '2')
 
-            # Create known hosts section
+            # Criar a seção de hosts conhecidos
             config.add_section('known_hosts')
             config.set('known_hosts', 'value', '')
 
-            # Create credetials section
+            # Criar a seção de credenciais
             config.add_section('credentials')
             config.set('credentials', 'user', '')
             config.set('credentials', 'password', '')
@@ -88,10 +88,10 @@ class Configuration(tk.Frame):
 
         rows_cols = config_obj["max_rows_columns"]
 
-        global MAX_ROWS
-        global MAX_COLS
-        MAX_ROWS = int(rows_cols['max_rows'])
-        MAX_COLS = int(rows_cols['max_columns'])
+        global MAX_LINHAS
+        global MAX_COLUNAS
+        MAX_LINHAS = int(rows_cols['max_rows'])
+        MAX_COLUNAS = int(rows_cols['max_columns'])
 
         global USERNAME
         global PASSWORD
@@ -102,173 +102,176 @@ class Configuration(tk.Frame):
         # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
         paddingY = 10
         paddingX = 75
-        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
+        # Título ---------------------------------------------------------------------------------------------------------------------------------------------
         titulo = ttk.Label(self, text="Configurações",
                            font=controller.title_font, foreground="white")
         titulo.grid(row=0, column=0, pady=20, columnspan=2,
                     padx=(paddingX, 0))
 
-        # Frame Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
-        widgets_frame = ttk.Frame(self)
-        widgets_frame.grid(row=1, column=0, columnspan=2,
-                           padx=(paddingX, 0))
+        # Quadro Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
+        quadro_widgets = ttk.Frame(self)
+        quadro_widgets.grid(row=1, column=0, columnspan=2,
+                            padx=(paddingX, 0))
 
-        # Max Columns and Rows -------------------------------------------------------------------------------------------------------------------
-        subtitle_max_rows_cols = ttk.Label(
-            widgets_frame, text="Max Rows and Columns", font=controller.sub_font, foreground='grey', justify="right")
-        subtitle_max_rows_cols.grid(row=0, column=0, columnspan=2, pady=5)
+        # Máximo de Linhas e Colunas -------------------------------------------------------------------------------------------------------------------
+        subtitulo_max_linhas_cols = ttk.Label(
+            quadro_widgets, text="Máximo de Linhas e Colunas", font=controller.sub_font, foreground='grey', justify="right")
+        subtitulo_max_linhas_cols.grid(row=0, column=0, columnspan=2, pady=5)
 
-        # Max Rows
-        max_rows_var = tk.IntVar()
-        max_rows_entry = ttk.Spinbox(widgets_frame, from_=2,
-                                     to=10, textvariable=max_rows_var)
-        max_rows_entry.grid(row=1, column=0, pady=paddingY,
-                            sticky="we", padx=(0, paddingY))
+        # Máximo de Linhas
+        var_max_linhas = tk.IntVar()
+        entrada_max_linhas = ttk.Spinbox(quadro_widgets, from_=2,
+                                         to=10, textvariable=var_max_linhas)
+        entrada_max_linhas.grid(row=1, column=0, pady=paddingY,
+                                sticky="we", padx=(0, paddingY))
 
-        max_rows_entry.delete(0, END)
-        max_rows_entry.insert(0, MAX_ROWS.__str__())
+        entrada_max_linhas.delete(0, END)
+        entrada_max_linhas.insert(0, MAX_LINHAS.__str__())
 
-        max_rows_label = ttk.Label(
-            widgets_frame, text="Max Rows", font="colortube 11")
-        max_rows_label.grid(row=max_rows_entry.grid_info()['row'], column=max_rows_entry.grid_info()[
-                            'column'], sticky="nw", padx=5)
+        label_max_linhas = ttk.Label(
+            quadro_widgets, text="Máximo de Linhas", font="colortube 11")
+        label_max_linhas.grid(row=entrada_max_linhas.grid_info()['row'], column=entrada_max_linhas.grid_info()[
+            'column'], sticky="nw", padx=5)
 
-        # Max Columns
-        max_cols_var = tk.IntVar()
-        max_cols_entry = ttk.Spinbox(widgets_frame, from_=1,
-                                     to=10, textvariable=max_cols_var)
-        max_cols_entry.grid(row=1, column=1, pady=paddingY, sticky="we")
+        # Máximo de Colunas
+        var_max_colunas = tk.IntVar()
+        entrada_max_colunas = ttk.Spinbox(quadro_widgets, from_=1,
+                                          to=10, textvariable=var_max_colunas)
+        entrada_max_colunas.grid(row=1, column=1, pady=paddingY, sticky="we")
 
-        max_cols_label = ttk.Label(
-            widgets_frame, text="Max Columns", font="colortube 11")
-        max_cols_label.grid(row=max_cols_entry.grid_info()['row'], column=max_cols_entry.grid_info()[
-                            'column'], sticky="nw", padx=5)
+        label_max_colunas = ttk.Label(
+            quadro_widgets, text="Máximo de Colunas", font="colortube 11")
+        label_max_colunas.grid(row=entrada_max_colunas.grid_info()['row'], column=entrada_max_colunas.grid_info()[
+                               'column'], sticky="nw", padx=5)
 
-        max_cols_entry.delete(0, END)
-        max_cols_entry.insert(0, MAX_COLS.__str__())
+        entrada_max_colunas.delete(0, END)
+        entrada_max_colunas.insert(0, MAX_COLUNAS.__str__())
 
-        # User Credentials -------------------------------------------------------------------------------------------------------------------------------------
-        labelSubtitle = ttk.Label(widgets_frame, text="Credencias", font=controller.sub_font, foreground='grey',
-                                  justify="center")
-        labelSubtitle.grid(row=2, column=0, columnspan=2,
-                           pady=(paddingY*2, paddingY/2))
+        # Credenciais do Usuário -------------------------------------------------------------------------------------------------------------------------------------
+        label_subtitulo = ttk.Label(quadro_widgets, text="Credenciais", font=controller.sub_font, foreground='grey',
+                                    justify="center")
+        label_subtitulo.grid(row=2, column=0, columnspan=2,
+                             pady=(paddingY*2, paddingY/2))
 
         # Usuário
-        varUser = tk.StringVar()
-        user_entry = ttk.Entry(widgets_frame, textvariable=varUser)
-        user_entry.grid(column=0, row=3, pady=paddingY,
-                        sticky="we", padx=(0, paddingY))
-        userBoxLabel = ttk.Label(
-            widgets_frame, text="Usuário", font="colortube 11")
-        userBoxLabel.grid(column=user_entry.grid_info()[
-                          "column"], row=user_entry.grid_info()["row"], sticky="nw", padx=5)
+        var_usuario = tk.StringVar()
+        entrada_usuario = ttk.Entry(quadro_widgets, textvariable=var_usuario)
+        entrada_usuario.grid(column=0, row=3, pady=paddingY,
+                             sticky="we", padx=(0, paddingY))
+        label_usuario = ttk.Label(
+            quadro_widgets, text="Usuário", font="colortube 11")
+        label_usuario.grid(column=entrada_usuario.grid_info()[
+                           "column"], row=entrada_usuario.grid_info()["row"], sticky="nw", padx=5)
 
         # Senha
-        varPass = tk.StringVar()
-        password_entry = ttk.Entry(
-            widgets_frame, textvariable=varPass)
-        password_entry.grid(column=1, row=3, pady=paddingY,
-                            sticky="we")
-        passBoxLabel = ttk.Label(
-            widgets_frame, text="Senha", font="colortube 11")
-        passBoxLabel.grid(column=password_entry.grid_info()[
-                          "column"], row=password_entry.grid_info()["row"], sticky="nw", padx=5)
+        var_senha = tk.StringVar()
+        entrada_senha = ttk.Entry(
+            quadro_widgets, textvariable=var_senha)
+        entrada_senha.grid(column=1, row=3, pady=paddingY,
+                           sticky="we")
+        label_senha = ttk.Label(
+            quadro_widgets, text="Senha", font="colortube 11")
+        label_senha.grid(column=entrada_senha.grid_info()[
+            "column"], row=entrada_senha.grid_info()["row"], sticky="nw", padx=5)
 
-        # delete_credentials function
+        # Função delete_credentials
         def delete_credentials():
-            """Clear the credentials stored in the config file"""
+            """Limpa as credenciais armazenadas no arquivo de configuração"""
 
             config_obj["credentials"]["user"] = ""
             config_obj["credentials"]["password"] = ""
             with open("config.ini", "w") as config_file:
                 config_obj.write(config_file)
-            user_entry.delete(0, END)
-            password_entry.delete(0, END)
+            entrada_usuario.delete(0, END)
+            entrada_senha.delete(0, END)
 
         # Switch para conectar automaticamente
-        global auto_connect_var
-        auto_connect_var = tk.BooleanVar()
-        auto_connect_switch = ttk.Checkbutton(
-            widgets_frame, text="Auto-connect", variable=auto_connect_var, style='Switch')
-        auto_connect_switch.grid(column=0, row=4, pady=paddingY,
-                                 sticky="we")
+        global var_conectar_auto
+        var_conectar_auto = tk.BooleanVar()
+        switch_conectar_auto = ttk.Checkbutton(
+            quadro_widgets, text="Conectar Automaticamente", variable=var_conectar_auto, style='Switch')
+        switch_conectar_auto.grid(column=0, row=4, pady=paddingY,
+                                  sticky="we")
 
-        # Botão de apagar credenciais
-        delete_credentials_button = ttk.Button(
-            widgets_frame, text="Deletar Credenciais", command=delete_credentials)
-        delete_credentials_button.grid(column=1, row=4, pady=paddingY,
+        # Botão para deletar as credenciais
+        botao_deletar_credenciais = ttk.Button(
+            quadro_widgets, text="Deletar Credenciais", command=delete_credentials)
+        botao_deletar_credenciais.grid(column=1, row=4, pady=paddingY,
                                        sticky="news")
 
-        # update_config function
-
+        # Função update_config
         def update_config():
-            global MAX_ROWS
-            global MAX_COLS
-            MAX_ROWS = int(max_rows_var.get())
-            MAX_COLS = int(max_cols_var.get())
-            config_obj["max_rows_columns"]["max_rows"] = str(MAX_ROWS)
-            config_obj["max_rows_columns"]["max_columns"] = str(MAX_COLS)
+            global MAX_LINHAS
+            global MAX_COLUNAS
+            MAX_LINHAS = int(var_max_linhas.get())
+            MAX_COLUNAS = int(var_max_colunas.get())
+            config_obj["max_rows_columns"]["max_rows"] = str(MAX_LINHAS)
+            config_obj["max_rows_columns"]["max_columns"] = str(MAX_COLUNAS)
 
-            max_cols_entry.delete(0, END)
-            max_cols_entry.insert(0, MAX_COLS.__str__())
+            entrada_max_colunas.delete(0, END)
+            entrada_max_colunas.insert(0, MAX_COLUNAS.__str__())
 
-            max_rows_entry.delete(0, END)
-            max_rows_entry.insert(0, MAX_ROWS.__str__())
+            entrada_max_linhas.delete(0, END)
+            entrada_max_linhas.insert(0, MAX_LINHAS.__str__())
 
             global USERNAME
             global PASSWORD
 
-            if user_entry.get() != "":
-                USERNAME = user_entry.get()
+            if entrada_usuario.get() != "":
+                USERNAME = entrada_usuario.get()
                 config_obj["credentials"]["user"] = USERNAME
-                user_entry.delete(0, END)
-                user_entry.insert(0, USERNAME)
+                entrada_usuario.delete(0, END)
+                entrada_usuario.insert(0, USERNAME)
                 time.sleep(3)
-                user_entry.delete(0, END)
+                entrada_usuario.delete(0, END)
 
-            if password_entry.get() != "":
-                PASSWORD = password_entry.get()
+            if entrada_senha.get() != "":
+                PASSWORD = entrada_senha.get()
                 config_obj["credentials"]["password"] = PASSWORD
-                password_entry.delete(0, END)
-                password_entry.insert(0, PASSWORD)
+                entrada_senha.delete(0, END)
+                entrada_senha.insert(0, PASSWORD)
                 time.sleep(3)
-                password_entry.delete(0, END)
+                entrada_senha.delete(0, END)
 
             with open("config.ini", "w") as config_file:
                 config_obj.write(config_file)
 
-        # Navigation -----------------------------------------------------------------------------------------------------------------------------------------
-        accentbutton = ttk.Button(
+        # Navegação -----------------------------------------------------------------------------------------------------------------------------------------
+        botao_aplicar = ttk.Button(
             self, text="Aplicar", style="AccentButton", command=update_config)
-        accentbutton.grid(row=11, column=1, padx=10, pady=(
+        botao_aplicar.grid(row=11, column=1, padx=10, pady=(
             paddingY*4, paddingY/2), sticky='nswe')
-        button = ttk.Button(self, text="Voltar ao início",
-                            command=lambda: controller.show_frame("StartPage"))
-        button.grid(row=11, column=0, padx=(
+        botao_voltar = ttk.Button(self, text="Voltar ao início",
+                                  command=lambda: controller.mostrar_quadro("PaginaInicial"))
+        botao_voltar.grid(row=11, column=0, padx=(
             paddingX, 10), pady=(paddingY*4, paddingY/2), sticky='nswe')
 
 
-class StartPage(ttk.Frame):
+class PaginaInicial(ttk.Frame):
 
     def __init__(self, parent, controller):
-        pad = 55
+        margem = 55
         ttk.Frame.__init__(self, parent)
         self.controller = controller
-        labelTitle = ttk.Label(
+        labelTitulo = ttk.Label(
             self, text="Aidly: Juntos pela\nsolidariedade", font=controller.title_font, justify="center")
-        labelTitle.grid(column=0, row=0, pady=(20, 0), padx=pad)
-        labelSubtitle = ttk.Label(self, text="Bem vindo!\n Escolha uma opção abaixo", font=controller.sub_font, foreground='grey',
-                                  justify="center")
-        labelSubtitle.grid(column=0, row=1,
-                           pady=(10, 20), padx=pad + 20)
+        labelTitulo.grid(column=0, row=0, pady=(20, 0), padx=margem)
+        labelSubtitulo = ttk.Label(self, text="Bem-vindo!\nEscolha uma opção abaixo", font=controller.sub_font, foreground='grey',
+                                   justify="center")
+        labelSubtitulo.grid(column=0, row=1,
+                            pady=(10, 20), padx=margem + 20)
 
-        button1 = ttk.Button(self, text="Sou uma ONG", style="AccentButton",
-                             command=lambda: controller.show_frame("DadosOng"))
-        button1.grid(sticky='we', column=0, row=3, pady=10, padx=20)
+        botao1 = ttk.Button(self, text="Sou uma ONG", style="AccentButton",
+                            command=lambda: controller.mostrar_quadro("DadosOng"))
+        botao1.grid(sticky='we', column=0, row=3, pady=10, padx=20)
 
-        button2 = ttk.Button(self, text="Sou uma Empresa", style="AccentButton",
-                             command=lambda: controller.show_frame("CompanyPage"))
-        button2.grid(sticky='we', column=0, row=4, pady=10, padx=20)
+        botao2 = ttk.Button(self, text="Sou uma Empresa", style="AccentButton",
+                            command=lambda: controller.mostrar_quadro("PaginaEmpresa"))
+        botao2.grid(sticky='we', column=0, row=4, pady=10, padx=20)
+
+        botao3 = ttk.Button(self, text="Configurações", style="AccentButton",
+                            command=lambda: controller.mostrar_quadro("PaginaConfiguracoes"))
+        botao3.grid(sticky='we', column=0, row=5, pady=10, padx=20)
 
 
 class DadosOng(ttk.Frame):
@@ -278,16 +281,40 @@ class DadosOng(ttk.Frame):
         self.controller = controller
 
         global REQUERIMENTO
-        REQUERIMENTO = {}
+        REQUERIMENTO = {
+            "id": "",
+            "dados_ong": {
+                "nome_ong": "",
+                "nome_responsavel": "",
+                "nome_projeto": "",
+                "cnpj": "",
+                "telefone": "",
+                "endereco": {
+                    "rua": "",
+                    "numero": "",
+                    "bairro": "",
+                    "cidade": "",
+                    "estado": "",
+                    "cep": ""
+                }
+            },
+            "lista_itens": [
+                {
+                    "nome_item": "",
+                    "quantidade": "",
+                    "categoria": ""
+                }
+            ]
+        }
 
         # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
         paddingY = 10
 
-        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
+        # Título ---------------------------------------------------------------------------------------------------------------------------------------------
         titulo = ttk.Label(self, text="Digite os dados da ONG",
                            font=controller.title_font, foreground="white")
         titulo.grid(row=0, column=0, pady=20,
-                    columnspan=MAX_COLS+1, padx=100, sticky="we")
+                    columnspan=MAX_COLUNAS+1, padx=100, sticky="we")
 
         # Frame Coluna 1   -----------------------------------------------------------------------------------------------------------------------------------
         widgets_frame = ttk.Frame(self)
@@ -500,111 +527,109 @@ class DadosOng(ttk.Frame):
 
             print(REQUERIMENTO)
 
-            controller.show_frame("ItensPage")
+            controller.mostrar_quadro("PaginaItens")
 
         # Botões ---------------------------------------------------------------------------------------------------------------------------------------------
         accentbutton = ttk.Button(
-            self, text="Proximo passo", style="AccentButton", command=save)
+            self, text="Próximo passo", style="AccentButton", command=save)
         accentbutton.grid(row=11, column=1, padx=(
             paddingY, 0), pady=20, sticky='nswe')
         button = ttk.Button(self, text="Voltar ao início",
-                            command=lambda: controller.show_frame("StartPage"))
+                            command=lambda: controller.mostrar_quadro("PaginaInicial"))
         button.grid(row=11, column=0, padx=paddingY, pady=20, sticky='nswe')
 
 
-class ItensPage(ttk.Frame):
+class PaginaItens(ttk.Frame):
 
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
         self.controller = controller
-        global MAX_ROWS
-        global MAX_COLS
+        global MAX_LINHAS
+        global MAX_COLUNAS
         global REQUERIMENTO
         print(REQUERIMENTO)
 
         # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
         paddingY = 10
 
-        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
+        # Título ---------------------------------------------------------------------------------------------------------------------------------------------
         titulo = ttk.Label(self, text="Adicione os itens requeridos",
                            font=controller.title_font, foreground="white")
         titulo.grid(row=0, column=0, pady=20,
-                    columnspan=MAX_COLS+2, padx=100, sticky="we")
+                    columnspan=MAX_COLUNAS+2, padx=100, sticky="we")
 
         # Frame Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
         widgets_frame = ttk.Frame(self)
         widgets_frame.grid(row=1, column=0, sticky='news',
                            padx=paddingY)
 
-        # Owners
-        global items
-
+        # Itens
+        global itens
         global start_col
-        global createItem
-        global removeItem
+        global criarItem
+        global removerItem
         global frames
-        STARTING = 1
-        items = []
+        itens = []
         start_col = -2
         # Frame
         frames = []
 
-        def createFrame():
+        def criarFrame():
             global frames
             defaultFrame = ttk.Frame(widgets_frame)
             frames.append(defaultFrame)
 
-        def resetWidgets(start_row, start_col, frame):
-            global createItem
-            global removeItem
+        def resetarWidgets(start_row, start_col, frame):
+            global criarItem
+            global removerItem
 
-            createItem = ttk.Button(
-                frame, text="+ Item", command=createItems)
-            removeItem = ttk.Button(
-                frame, text="- Item", command=removeItems)
+            criarItem = ttk.Button(
+                frame, text="+ Item", command=criarItens)
+            removerItem = ttk.Button(
+                frame, text="- Item", command=removerItens)
 
-            if len(items) > 1:
-                removeItem.grid(
+            if len(itens) > 1:
+                removerItem.grid(
                     column=1+start_col, row=start_row+9, sticky="nwe", pady=paddingY*2.5, padx=(2.5, 0))
-                createItem.grid(
+                criarItem.grid(
                     column=start_col, row=start_row+9, sticky="new", pady=paddingY*2.5, padx=(0, 2.5))
             else:
-                removeItem.grid_forget()
-                createItem.grid(
+                removerItem.grid_forget()
+                criarItem.grid(
                     column=start_col, row=start_row+9, columnspan=2, sticky="new", pady=paddingY*2.5)
 
             if start_col == 2:
-                createItem.grid_configure(
+                criarItem.grid_configure(
                     padx=(paddingY*2, 2.5), pady=paddingY)
-                removeItem.grid_configure(pady=paddingY)
-                if MAX_COLS*MAX_ROWS == len(items):
+                removerItem.grid_configure(pady=paddingY)
+                if MAX_COLUNAS*MAX_LINHAS == len(itens):
                     print("Não é possível adicionar mais itens")
-                    createItem.grid_forget()
-                    removeItem.grid_forget()
-                    removeItem = ttk.Button(
-                        widgets_frame2, text="- Items", command=removeItems)
-                    removeItem.grid(
+                    criarItem.grid_forget()
+                    removerItem.grid_forget()
+                    removerItem = ttk.Button(
+                        widgets_frame2, text="- Itens", command=removerItens)
+                    removerItem.grid(
                         row=8, column=2, columnspan=2, sticky="ew", pady=paddingY)
 
-        def createItems():
+        def criarItens():
             global start_col
-            global MAX_ROWS
-            global items
-            if MAX_COLS*MAX_ROWS == len(items):
+            global MAX_LINHAS
+            global itens
+            if MAX_COLUNAS*MAX_LINHAS == len(itens):
                 return
 
-            createItem.grid_forget()
-            removeItem.grid_forget()
+            criarItem.grid_forget()
+            removerItem.grid_forget()
 
-            start_row = (len(items) % MAX_ROWS) * 8
+            start_row = (len(itens) % MAX_LINHAS) * 8
 
-            if len(items) % MAX_ROWS == 0:
+            if len(itens) % MAX_LINHAS == 0:
                 start_col += 2
-                createFrame()
+                criarFrame()
 
             frame = frames[-1]
 
-            if len(items) % MAX_ROWS == 0:
+            if len(itens) % MAX_LINHAS == 0:
                 frame.grid(row=start_row, column=start_col,
                            sticky="new", padx=(paddingY, paddingY))
 
@@ -627,7 +652,7 @@ class ItensPage(ttk.Frame):
             # Separator
             separator = ttk.Separator(frame, orient="horizontal")
 
-            items.append({
+            itens.append({
                 "frame": frame,
                 "nome_item": nome_item,
                 "label_nome_item": label_nome_produto,
@@ -639,16 +664,16 @@ class ItensPage(ttk.Frame):
                 "separator": separator
             })
             # Changes labels based on owner count
-            if len(items) > 1:
-                items[0]["label_nome_item"].configure(text="Nome item 1")
-                items[0]["label_categoria"].configure(text="Categoria 1")
-                items[0]["quantidade_label"].configure(
+            if len(itens) > 1:
+                itens[0]["label_nome_item"].configure(text="Nome item 1")
+                itens[0]["label_categoria"].configure(text="Categoria 1")
+                itens[0]["quantidade_label"].configure(
                     text="Quantidade 1")
-                label_nome_produto.config(text="Nome item "+str(len(items)))
-                label_categoria.config(text="Categoria "+str(len(items)))
+                label_nome_produto.config(text="Nome item "+str(len(itens)))
+                label_categoria.config(text="Categoria "+str(len(itens)))
                 quantidade_label.config(
-                    text='Quantidade '+str(len(items)))
-                items[0]["separator"].grid()
+                    text='Quantidade '+str(len(itens)))
+                itens[0]["separator"].grid()
 
             # Separator
             separator.grid(row=start_row, column=0, columnspan=2,
@@ -659,7 +684,7 @@ class ItensPage(ttk.Frame):
                            pady=(paddingY*2.5, paddingY), sticky="we")
             label_nome_produto.grid(column=0, row=start_row+1, columnspan=2, sticky="nw",
                                     padx=5, pady=5)
-            if len(items) % MAX_ROWS == 1:
+            if len(itens) % MAX_LINHAS == 1:
                 nome_item.grid_configure(pady=paddingY)
                 label_nome_produto.grid_configure(pady=0, padx=5)
 
@@ -676,23 +701,23 @@ class ItensPage(ttk.Frame):
                                   sticky="nw", columnspan=2, padx=5)
 
             # Remover separador no ultimo item
-            if len(items) % MAX_ROWS == 1:
+            if len(itens) % MAX_LINHAS == 1:
                 separator.grid_forget()
 
             bstart_col = 0
             bstart_row = start_row
-            if len(items) % MAX_ROWS == 0:
+            if len(itens) % MAX_LINHAS == 0:
                 bstart_col = 2
                 bstart_row = -8
 
             # print("Start row: " + str(bstart_row), " | Start col: " + str(start_col), " | Start frame: " + str(frame.grid_info()["column"])+","+ str(frame.grid_info()["row"]))
-            resetWidgets(bstart_row, bstart_col, frame)
+            resetarWidgets(bstart_row, bstart_col, frame)
 
-        def removeItems():
-            createItem.grid_forget()
-            removeItem.grid_forget()
+        def removerItens():
+            criarItem.grid_forget()
+            removerItem.grid_forget()
             # offset row by lenght of items
-            owner = items.pop()
+            owner = itens.pop()
             owner["nome_item"].grid_forget()
             owner["label_nome_item"].grid_forget()
             owner["categoria"].grid_forget()
@@ -701,46 +726,85 @@ class ItensPage(ttk.Frame):
             owner["quantidade_label"].grid_forget()
             owner["separator"].grid_forget()
 
-            start_row = ((len(items)) % MAX_ROWS) * 8
+            start_row = ((len(itens)) % MAX_LINHAS) * 8
             bstart_col = 0
 
-            if len(items) < 2:
-                items[0]["label_nome_item"].configure(text="Nome item")
-                items[0]["label_categoria"].configure(text="Categoria")
-                items[0]["quantidade_label"].configure(
+            if len(itens) < 2:
+                itens[0]["label_nome_item"].configure(text="Nome item")
+                itens[0]["label_categoria"].configure(text="Categoria")
+                itens[0]["quantidade_label"].configure(
                     text="Quantidade")
 
             bstart_row = start_row
-            if len(items) % MAX_ROWS == 0:
+            if len(itens) % MAX_LINHAS == 0:
                 frames.pop().grid_forget()
                 bstart_col = 2
                 bstart_row = -8
 
             frame = frames[-1]
 
-            resetWidgets(bstart_row, bstart_col, frame)
+            resetarWidgets(bstart_row, bstart_col, frame)
 
-        createItem = ttk.Button(
-            widgets_frame, text="+ Item", command=createItems)
-        createItem.grid(
+        criarItem = ttk.Button(
+            widgets_frame, text="+ Item", command=criarItens)
+        criarItem.grid(
             column=0, row=7, columnspan=2, sticky="we", pady=paddingY)
-        removeItem = ttk.Button(
-            widgets_frame, text="- Item", command=removeItems)
+        removerItem = ttk.Button(
+            widgets_frame, text="- Item", command=removerItens)
+        criarItens()
 
         # Frame Coluna 2    -----------------------------------------------------------------------------------------------------------------------------------
         widgets_frame2 = tk.Frame(self)
         widgets_frame2.grid(row=1, column=1)  # Cria widgets_frame2 na janela
-        createItems()
+
+        def salvar():
+            global REQUERIMENTO
+            print("Salvando...")
+            # converter itens para json
+            itens_json = []
+            for item in itens:
+                itens_json.append({
+                    "nome_item": item["nome_item"].get(),
+                    "categoria": item["categoria"].get(),
+                    "quantidade": item["quantidade"].get()
+                })
+
+            # Salvar dados em requerimentos.json
+            import os
+            import json
+
+            REQUERIMENTO = {
+                "dados_ong": REQUERIMENTO.get("dados_ong")
+            }
+
+            if os.path.exists("requerimentos.json"):
+                with open("requerimentos.json", "r") as r:
+                    requerimentos = json.load(r)
+            else:
+                requerimentos = []
+
+            REQUERIMENTO.update({
+                "id": len(requerimentos) + 1,
+                "itens": itens_json,
+            })
+
+            requerimentos.append(REQUERIMENTO)
+
+            with open("requerimentos.json", "w") as w:
+                json.dump(requerimentos, w, indent=2)
+                print("Salvo!")
+
+            # controller.mostrar_quadro("DadosOng")
 
         accentbutton = ttk.Button(
-            self, text="Criar", style="AccentButton")
+            self, text="Criar", style="AccentButton", command=salvar)
         accentbutton.grid(row=11, column=1, padx=10, pady=20, sticky='nswe')
         button = ttk.Button(self, text="Voltar",
-                            command=lambda: controller.show_frame("DadosOng"))
+                            command=lambda: controller.mostrar_quadro("DadosOng"))
         button.grid(row=11, column=0, padx=10, pady=20, sticky='nswe')
 
 
-class CompanyPage(ttk.Frame):
+class PaginaEmpresa(ttk.Frame):
 
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
@@ -752,214 +816,57 @@ class CompanyPage(ttk.Frame):
         titulo = ttk.Label(self, text="Import de Tabela",
                            font=controller.title_font, foreground="white")
         titulo.grid(row=0, column=0, pady=20,
-                    columnspan=4, padx=(paddingY + 50, 0))
+                    columnspan=4, padx=paddingY)
 
-        # Frame Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
-        widgets_frame = ttk.Frame(self)
-        widgets_frame.grid(row=1, column=0, sticky='new',
-                           padx=(paddingY + 40, paddingY + 10))
+        # Frame lista de requerimentos ----------------------------------------------------------------------------------------------------------------------
+        requerimentos_frame = tk.Frame(self)
+        requerimentos_frame.grid(
+            row=1, column=0, columnspan=4, sticky="nswe", padx=paddingY, pady=paddingY)
 
-        # Owner
-        ownerBox = ttk.Entry(widgets_frame)
-        ownerBox.grid(column=0, row=1, columnspan=2,
-                      pady=paddingY, sticky="we")
-        ownerBoxLabel = ttk.Label(widgets_frame, text="Owner", font="colortube 11").grid(column=0, row=1, columnspan=2, sticky="nw",
-                                                                                         padx=5)
+        # Lista de requerimentos
+        requerimentos = []
+        if os.path.exists("requerimentos.json"):
+            with open("requerimentos.json", "r") as r:
+                requerimentos = json.load(r)
 
-        # Owner Destino
-        def toggleRemap():
-            if varRemapCheck.get():
-                owner_destinoBox.grid(
-                    column=0, row=2, columnspan=2, pady=paddingY, sticky="we")
-                owner_destinoBoxLabel.grid(
-                    column=0, row=2, columnspan=2, sticky="nw", padx=5)
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(requerimentos_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Lista
+        lista = tk.Listbox(requerimentos_frame, yscrollcommand=scrollbar.set, )
+        lista.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+
+        # Adicionar requerimentos à lista
+        for requerimento in requerimentos:
+            lista.insert(tk.END, requerimento["dados_ong"]["nome_ong"]+" - " +str(requerimento["id"]))
+
+        # Configurar scrollbar
+        scrollbar.config(command=lista.yview)
+
+        label = ttk.Label(self, text="", font=controller.title_font)
+        label.grid(row=2, column=0, pady=20, padx=paddingY)
+
+        def callback(event):
+            selection = event.widget.curselection()
+            if selection:
+                index = selection[0]
+                data = event.widget.get(index)
+                label.configure(text=data)
             else:
-                owner_destinoBox.grid_forget()
-                owner_destinoBoxLabel.grid_forget()
+                label.configure(text="")
 
-        owner_destinoBox = ttk.Entry(widgets_frame)
-        owner_destinoBoxLabel = ttk.Label(
-            widgets_frame, text="Owner Destino", font="colortube 11")
-
-        # Tabela
-        tabelaBox = ttk.Entry(widgets_frame)
-        tabelaBox.grid(column=0, row=3, columnspan=2,
-                       pady=paddingY, sticky="we")
-        ttk.Label(widgets_frame, text="Tabela", font="colortube 11").grid(column=0, row=3, columnspan=2, sticky="nw",
-                                                                          padx=5)
-        # Tabelas
-        tabRow = tabelaBox.grid_info()["row"]+1
-        tabelas = []
-        labels = []
-
-        def resetWidgets():
-            rowLen = len(tabelas)+tabRow
-            if len(tabelas) > 0:
-                removeTabelasButton.grid_forget()
-                removeTabelasButton.grid(column=1, row=len(
-                    tabelas)+tabRow+1, sticky="w", pady=paddingY, padx=(2.5, 0))
-                createTabelasButton.grid(column=0, row=len(
-                    tabelas)+tabRow+1, sticky="e", pady=paddingY, padx=(0, 2.5))
-            else:
-                createTabelasButton.grid(column=0, row=len(
-                    tabelas)+tabRow+1, columnspan=2, sticky="we", pady=paddingY)
-            RemapCheck.grid_forget()
-            RemapCheck.grid(row=len(tabelas)+tabRow+2, column=0,
-                            columnspan=2, sticky='w', pady=(0, 5))
-            VerCheck.grid_forget()
-            VerCheck.grid(row=len(tabelas)+tabRow+3, column=0,
-                          columnspan=2, sticky='w', pady=(0, 5))
-            ArchiveCheck.grid_forget()
-            ArchiveCheck.grid(row=len(tabelas)+tabRow+4, column=0, columnspan=2,
-                              sticky='w', pady=(0, 5))
-
-        def createtabelas():
-            global widgetNames
-            createTabelasButton.grid_forget()
-            removeTabelasButton.grid_forget()
-            TabelasBox = ttk.Entry(widgets_frame)
-            tabelas.append(TabelasBox)
-
-            TabelasBox.grid(column=0, row=len(tabelas)+tabRow, columnspan=2,
-                            pady=paddingY, sticky="we")
-            label = ttk.Label(widgets_frame, text="Tabela "+str(len(tabelas)+1),
-                              font="colortube 11")
-            label.grid(column=0, row=len(tabelas)+tabRow, columnspan=2, sticky="nw",
-                       padx=5)
-            labels.append(label)
-            resetWidgets()
-
-        def removetabelas():
-            createTabelasButton.grid_forget()
-            removeTabelasButton.grid_forget()
-            tabelas.pop().grid_forget()
-            labels.pop().grid_forget()
-            resetWidgets()
-
-        createTabelasButton = ttk.Button(
-            widgets_frame, text="+ Tabela", command=createtabelas)
-        createTabelasButton.grid(column=0, row=len(
-            tabelas)+tabRow+1, columnspan=2, sticky="we", pady=paddingY)
-        removeTabelasButton = ttk.Button(
-            widgets_frame, text="- Tabela", command=removetabelas)
-
-        # Remap CheckBox
-        varRemapCheck = BooleanVar()
-        RemapCheck = ttk.Checkbutton(widgets_frame, text='Remap Owner', variable=varRemapCheck, command=toggleRemap,
-                                     style='Switch')
-        RemapCheck.grid(row=len(tabelas)+tabRow+2, column=0,
-                        columnspan=2, sticky='w', pady=(0, 5))
-
-        # Version CheckBox
-        varVerCheck = BooleanVar()
-        VerCheck = ttk.Checkbutton(
-            widgets_frame, text='Version 12.1', variable=varVerCheck, style='Switch')
-        VerCheck.grid(row=len(tabelas)+tabRow+3, column=0,
-                      columnspan=2, sticky='w', pady=(0, 5))
-
-        # Archive CheckBox
-        varArchiveCheck = BooleanVar()
-        ArchiveCheck = ttk.Checkbutton(
-            widgets_frame, text='Disable Archive', variable=varArchiveCheck, style='Switch')
-        ArchiveCheck.grid(row=len(tabelas)+tabRow+4, column=0, columnspan=2,
-                          sticky='w', pady=(0, 5))
-
-        # Frame Coluna 2    -----------------------------------------------------------------------------------------------------------------------------------
-        widgets_frame2 = tk.Frame(self)
-        # Cria widgets_frame2 na janela
-        widgets_frame2.grid(row=1, column=1, sticky='nw')
-
-        # Ticket
-        ticketBox = ttk.Entry(widgets_frame2)
-        ticketBox.grid(column=2, row=1,
-                       pady=paddingY, sticky="we")
-        ticketBoxLabel = ttk.Label(widgets_frame2, text="Nº Ticket", font="colortube 11").grid(column=2, row=1,
-                                                                                                sticky="nw",
-                                                                                                padx=5)
-
-        # Base Origem
-        base_origemBox = ttk.Entry(widgets_frame2)
-        base_origemBox.grid(column=2, row=2, pady=paddingY,
-                            sticky="we")
-        base_origemBoxLabel = ttk.Label(widgets_frame2, text="Base Origem", font="colortube 11").grid(column=2, row=2,
-                                                                                                      sticky="nw",
-                                                                                                      padx=5)
-
-        # Base Destino
-        varBaseDes = tk.StringVar()
-        base_destinoBox = ttk.Entry(
-            widgets_frame2, textvariable=varBaseDes)
-        base_destinoBox.grid(column=2, row=3, pady=paddingY,
-                             sticky="we")
-        base_destinoBoxLabel = ttk.Label(widgets_frame2, text="Base Destino", font="colortube 11").grid(column=2, row=3,
-                                                                                                        sticky="nw",
-                                                                                                        padx=5)
-
-        def script():  # Gera o script de Import
-            ticket = ticketBox.get()
-            owner = ownerBox.get().upper()
-            owner_destino = owner_destinoBox.get().upper()
-            base_origem = base_origemBox.get()
-            base_destino = base_destinoBox.get().lower()
-            tabListName = []
-            tabela = tabListName.append(tabelaBox.get().upper())
-
-            def version():
-                if varVerCheck.get():
-                    ver_text = f""" version=12.1"""
-                    return ver_text
-                else:
-                    return ""
-
-            def remap():
-                if varRemapCheck.get():
-                    remap_text = f" REMAP_SCHEMA={owner}:{owner_destino} REMAP_TABLESPACE={owner}_DAT:{owner_destino}_DAT,{owner}_IDX:{owner_destino}_IDX"
-                    return remap_text
-                else:
-                    return ""
-
-            def archive():
-                if varArchiveCheck.get():
-                    archive_text = f" transform=disable_archive_logging:y"
-                    return archive_text
-                else:
-                    return ""
-
-            for tabNames in tabelas:
-                tabListName.append(tabNames.get().upper())
-
-            List = []
-
-            def tabs():
-                for tabName in tabListName:
-                    List.append(f"{owner}.{tabName}, ")
-                return "".join(List)[:-2]
-
-            # Subistitui valores no script
-            script = f"""--ORIGEM: {base_origem.upper()}
-export ORACLE_SID={base_origem.lower()}
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-expdp BKP_EXPORT/AxxxM0 directory=DBA tables={tabs()} dumpfile={ticket}.dmp logfile=exp_{ticket}.log exclude=statistics{version()}
-
---Destino: {base_destino.upper()}
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile={ticket}.dmp logfile=imp_{ticket}.log{remap()}{archive()}"""
-
-            # Cria ou sobreescreve o aquivo import.txt
-            f = open("import.txt", "w+")
-            f.write(script)  # Escreve o script gerado
-            f.close()  # Fecha o arquivo import.txt
-            os.startfile("import.txt")  # Abre o arquivo import.txt
+        lista.bind("<<ListboxSelect>>", callback)
 
         accentbutton = ttk.Button(
-            self, text="Gerar", style="AccentButton", command=script)
-        accentbutton.grid(row=11, column=1, pady=20, sticky='nswe')
+            self, text="Gerar", style="AccentButton")
+        accentbutton.grid(row=11, column=1, pady=20,
+                          padx=paddingY, sticky='nswe')
         button = ttk.Button(self, text="Voltar ao início",
-                            command=lambda: controller.show_frame("StartPage"))
-        button.grid(row=11, column=0, padx=(
-            paddingY + 30, paddingY), pady=20, sticky='nswe')
+                            command=lambda: controller.mostrar_quadro("PaginaInicial"))
+        button.grid(row=11, column=0, padx=paddingY, pady=20, sticky='nswe')
 
 
 if __name__ == "__main__":
-    app = MainWindow()
+    app = JanelaPrincipal()
     app.mainloop()
