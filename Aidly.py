@@ -38,7 +38,7 @@ class MainWindow(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (Configuration, StartPage, ItensPage, CompanyPage, DadosOng):
+        for F in (Configuration, StartPage, DadosOng, ItensPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -46,7 +46,7 @@ class MainWindow(tk.Tk):
             # put all of the pages in the same location;
             # the one on the top of the stacking order
             # will be the one that is visible.
-            frame.grid(row=0, column=0, sticky="nsew")
+            frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         self.show_frame("StartPage")
 
@@ -251,7 +251,7 @@ class Configuration(tk.Frame):
 class StartPage(ttk.Frame):
 
     def __init__(self, parent, controller):
-        pad = 79
+        pad = 55
         ttk.Frame.__init__(self, parent)
         self.controller = controller
         labelTitle = ttk.Label(
@@ -271,29 +271,274 @@ class StartPage(ttk.Frame):
         button2.grid(sticky='we', column=0, row=4, pady=10, padx=20)
 
 
-class ItensPage(ttk.Frame):
+class DadosOng(ttk.Frame):
 
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
         self.controller = controller
 
+        global REQUERIMENTO
+        REQUERIMENTO = {}
+
         # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
         paddingY = 10
 
         # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
-        titulo = ttk.Label(self, text="Criação de Requerimentos",
+        titulo = ttk.Label(self, text="Digite os dados da ONG",
                            font=controller.title_font, foreground="white")
-        titulo.grid(row=0, column=0, pady=20, columnspan=4)
+        titulo.grid(row=0, column=0, pady=20,
+                    columnspan=MAX_COLS+1, padx=100, sticky="we")
+
+        # Frame Coluna 1   -----------------------------------------------------------------------------------------------------------------------------------
+        widgets_frame = ttk.Frame(self)
+        widgets_frame.grid(row=1, column=0, sticky='news',
+                           padx=paddingY)
+
+        # Nome da ONG
+        nome_ong = ttk.Entry(widgets_frame)
+        nome_ong.grid(column=2, row=1,
+                      pady=paddingY, sticky="we")
+        nome_ong_label = ttk.Label(
+            widgets_frame, text="Nome da ONG", font="colortube 11")
+        nome_ong_label.grid(column=2, row=1,
+                            sticky="nw",
+                            padx=5)
+
+        # Nome do Responsável
+        nome_responsavel = ttk.Entry(widgets_frame)
+        nome_responsavel.grid(column=2, row=2,
+                              pady=paddingY, sticky="we")
+        nome_responsavel_label = ttk.Label(
+            widgets_frame, text="Nome do Responsável", font="colortube 11")
+        nome_responsavel_label.grid(column=2, row=2,
+                                    sticky="nw",
+                                    padx=5)
+
+        # Nome do Projeto
+        nome_projeto = ttk.Entry(widgets_frame)
+        nome_projeto.grid(column=2, row=3,
+                          pady=paddingY, sticky="we")
+        nome_projeto_label = ttk.Label(
+            widgets_frame, text="Nome do Projeto", font="colortube 11")
+        nome_projeto_label.grid(column=2, row=3,
+                                sticky="nw",
+                                padx=5)
+
+        # CNPJ
+        cnpj_var = tk.StringVar()
+        cnpj = ttk.Entry(widgets_frame, textvariable=cnpj_var)
+        cnpj.grid(column=2, row=4,
+                  pady=paddingY, sticky="we")
+        cnpj_label = ttk.Label(
+            widgets_frame, text="CNPJ", font="colortube 11")
+        cnpj_label.grid(column=2, row=4,
+                        sticky="nw",
+                        padx=5)
+
+        def format_cnpj(*args):  # Formata o CNPJ para o padrão 00.000.000/0000-00
+            s = ''.join(filter(str.isdigit, cnpj_var.get()))
+
+            # adiciona os pontos e traços
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 3:
+                s = s[:2] + '.' + s[2:]
+            elif len(s) < 6:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:]
+            elif len(s) < 9:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + s[8:]
+            elif len(s) < 13:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
+                    s[8:12] + '-' + s[12:]
+            else:
+                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
+                    s[8:12] + '-' + s[12:14]
+
+            cnpj_var.set(s)
+
+            # atualizar texto dentro do Entry
+            cnpj.icursor(len(s))
+
+        # Listener para formatar CNPJ
+        cnpj_var.trace('w', format_cnpj)
+
+        # Telefone
+        telefone_var = tk.StringVar()
+        telefone = ttk.Entry(
+            widgets_frame, textvariable=telefone_var)
+        telefone.grid(column=2, row=5,
+                      pady=paddingY, sticky="we")
+        telefone_label = ttk.Label(
+            widgets_frame, text="Telefone", font="colortube 11")
+        telefone_label.grid(column=2, row=5,
+                            sticky="nw",
+                            padx=5)
+
+        def format_phone(*args):  # Formata o telefone para (xx) xxxx-xxxx
+            s = ''.join(filter(str.isdigit, telefone_var.get()))
+
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 3:
+                s = '(' + s + ')'
+            elif len(s) < 7:
+                s = '(' + s[:2] + ') ' + s[2:]
+            elif len(s) < 11:
+                s = '(' + s[:2] + ') ' + s[2:6] + '-' + s[6:]
+            else:
+                s = '(' + s[:2] + ') ' + s[2:7] + '-' + s[7:11]
+            telefone_var.set(s)
+
+            # atualizar texto dentro do Entry
+            telefone.icursor(len(s))
+
+        # Listener para formatar telefone
+        telefone_var.trace('w', format_phone)
+
+        # Frame Coluna 2 -------------------------------------------------------------------------------------------------------------------------------------
+        widgets_frame2 = tk.Frame(self)
+        widgets_frame2.grid(row=1, column=1, sticky='news',
+                            padx=(paddingY, 0))  # Cria widgets_frame2 na janela
+
+        # Rua
+        rua = ttk.Entry(widgets_frame2)
+        rua.grid(column=2, row=1, columnspan=2,
+                 pady=paddingY, sticky="we")
+        rua_label = ttk.Label(
+            widgets_frame2, text="Rua", font="colortube 11")
+        rua_label.grid(column=2, row=1,
+                       sticky="nw",
+                       padx=5)
+
+        # Número
+        numero = ttk.Entry(widgets_frame2)
+        numero.grid(column=2, row=2, columnspan=2,
+                    pady=paddingY, sticky="we")
+        numero_label = ttk.Label(
+            widgets_frame2, text="Número", font="colortube 11")
+        numero_label.grid(column=2, row=2,
+                          sticky="nw",
+                          padx=5)
+
+        # Bairro
+        bairro = ttk.Entry(widgets_frame2)
+        bairro.grid(column=2, row=3, columnspan=2,
+                    pady=paddingY, sticky="we")
+        bairro_label = ttk.Label(
+            widgets_frame2, text="Bairro", font="colortube 11")
+        bairro_label.grid(column=2, row=3,
+                          sticky="nw",
+                          padx=5)
+
+        # Cidade
+        cidade = ttk.Entry(widgets_frame2)
+        cidade.grid(column=2, row=4, columnspan=2,
+                    pady=paddingY, sticky="we")
+        cidade_label = ttk.Label(
+            widgets_frame2, text="Cidade", font="colortube 11")
+        cidade_label.grid(column=2, row=4,
+                          sticky="nw",
+                          padx=5)
+
+        # Estado
+        estado = ttk.Entry(widgets_frame2)
+        estado.grid(column=2, row=5,
+                    pady=paddingY, padx=(0, paddingY))
+        estado_label = ttk.Label(
+            widgets_frame2, text="Estado", font="colortube 11")
+        estado_label.grid(column=2, row=5,
+                          sticky="nw",
+                          padx=5)
+
+        # CEP
+        cep_var = tk.StringVar()
+        cep = ttk.Entry(widgets_frame2, textvariable=cep_var)
+        cep.grid(column=3, row=5,
+                 pady=paddingY)
+        cep_label = ttk.Label(
+            widgets_frame2, text="CEP", font="colortube 11")
+        cep_label.grid(column=3, row=5,
+                       sticky="nw",
+                       padx=5)
+
+        def format_cep(*args):  # Formata o CEP para xxxxx-xxx
+            s = ''.join(filter(str.isdigit, cep_var.get()))
+
+            if len(s) == 0:
+                s = ''
+            elif len(s) < 6:
+                s = s
+            else:
+                s = s[:5] + '-' + s[5:8]
+            cep_var.set(s)
+
+            # atualizar texto dentro do Entry
+            cep.icursor(len(s))
+
+        # Listener para formatar CEP
+        cep_var.trace('w', format_cep)
+
+        def save():  # Salva os dados no arquivo de configuração
+            global REQUERIMENTO
+            REQUERIMENTO = {
+                "dados_ong": {
+                    "nome_ong": nome_ong.get(),
+                    "nome_responsavel": nome_responsavel.get(),
+                    "nome_projeto": nome_projeto.get(),
+                    "cnpj": cnpj_var.get(),
+                    "telefone": telefone_var.get(),
+                    "endereco": {
+                        "rua": rua.get(),
+                        "numero": numero.get(),
+                        "bairro": bairro.get(),
+                        "cidade": cidade.get(),
+                        "estado": estado.get(),
+                        "cep": cep_var.get()
+                    }
+                }
+            }
+
+            print(REQUERIMENTO)
+
+            controller.show_frame("ItensPage")
+
+        # Botões ---------------------------------------------------------------------------------------------------------------------------------------------
+        accentbutton = ttk.Button(
+            self, text="Proximo passo", style="AccentButton", command=save)
+        accentbutton.grid(row=11, column=1, padx=(
+            paddingY, 0), pady=20, sticky='nswe')
+        button = ttk.Button(self, text="Voltar ao início",
+                            command=lambda: controller.show_frame("StartPage"))
+        button.grid(row=11, column=0, padx=paddingY, pady=20, sticky='nswe')
+
+
+class ItensPage(ttk.Frame):
+
+    def __init__(self, parent, controller):
+        ttk.Frame.__init__(self, parent)
+        self.controller = controller
+        global MAX_ROWS
+        global MAX_COLS
+        global REQUERIMENTO
+        print(REQUERIMENTO)
+
+        # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
+        paddingY = 10
+
+        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
+        titulo = ttk.Label(self, text="Adicione os itens requeridos",
+                           font=controller.title_font, foreground="white")
+        titulo.grid(row=0, column=0, pady=20,
+                    columnspan=MAX_COLS+2, padx=100, sticky="we")
 
         # Frame Coluna 1 -------------------------------------------------------------------------------------------------------------------------------------
         widgets_frame = ttk.Frame(self)
-        widgets_frame.grid(row=1, column=0, sticky='new',
-                           padx=(paddingY, paddingY))
+        widgets_frame.grid(row=1, column=0, sticky='news',
+                           padx=paddingY)
 
         # Owners
         global items
-        global MAX_ROWS
-        global MAX_COLS
+
         global start_col
         global createItem
         global removeItem
@@ -341,7 +586,6 @@ class ItensPage(ttk.Frame):
                     removeItem.grid(
                         row=8, column=2, columnspan=2, sticky="ew", pady=paddingY)
 
-
         def createItems():
             global start_col
             global MAX_ROWS
@@ -358,7 +602,7 @@ class ItensPage(ttk.Frame):
                 start_col += 2
                 createFrame()
 
-            frame = frames[len(frames) - 1]
+            frame = frames[-1]
 
             if len(items) % MAX_ROWS == 0:
                 frame.grid(row=start_row, column=start_col,
@@ -414,7 +658,7 @@ class ItensPage(ttk.Frame):
             nome_item.grid(column=0, row=start_row+1, columnspan=2,
                            pady=(paddingY*2.5, paddingY), sticky="we")
             label_nome_produto.grid(column=0, row=start_row+1, columnspan=2, sticky="nw",
-                                    padx=5, pady=paddingY*((nome_item.grid_info()["pady"][0]/paddingY)-1))
+                                    padx=5, pady=5)
             if len(items) % MAX_ROWS == 1:
                 nome_item.grid_configure(pady=paddingY)
                 label_nome_produto.grid_configure(pady=0, padx=5)
@@ -429,7 +673,7 @@ class ItensPage(ttk.Frame):
             quantidade.grid(column=0, row=start_row+4,
                             pady=(paddingY, paddingY*2), columnspan=2, sticky="we")
             quantidade_label.grid(column=0, row=start_row+4,
-                                  sticky="nw", columnspan=2, padx=(5, 55))
+                                  sticky="nw", columnspan=2, padx=5)
 
             # Remover separador no ultimo item
             if len(items) % MAX_ROWS == 1:
@@ -472,7 +716,7 @@ class ItensPage(ttk.Frame):
                 bstart_col = 2
                 bstart_row = -8
 
-            frame = frames[len(frames) - 1]
+            frame = frames[-1]
 
             resetWidgets(bstart_row, bstart_col, frame)
 
@@ -485,321 +729,18 @@ class ItensPage(ttk.Frame):
 
         # Frame Coluna 2    -----------------------------------------------------------------------------------------------------------------------------------
         widgets_frame2 = tk.Frame(self)
-        widgets_frame2.grid(row=1, column=1, sticky='nw',
-                            padx=(paddingY, paddingY + 15))  # Cria widgets_frame2 na janela
+        widgets_frame2.grid(row=1, column=1)  # Cria widgets_frame2 na janela
         createItems()
 
-        # Nome da ONG
-        nome_ong = ttk.Entry(widgets_frame2)
-        nome_ong.grid(column=2, row=1, columnspan=2,
-                      pady=paddingY, sticky="we")
-        nome_ong_label = ttk.Label(
-            widgets_frame2, text="Nome da ONG", font="colortube 11")
-        nome_ong_label.grid(column=2, row=1,
-                            sticky="nw",
-                            padx=5)
-
-        # CNPJ
-        cnpj_var = tk.StringVar()
-        cnpj = ttk.Entry(widgets_frame2, textvariable=cnpj_var)
-        cnpj.grid(column=2, row=2, pady=paddingY,
-                  columnspan=2, sticky="we")
-        cnpj_label = ttk.Label(
-            widgets_frame2, text="CNPJ", font="colortube 11")
-        cnpj_label.grid(column=2, row=2,
-                        sticky="nw",
-                        padx=5)
-        
-        def format_cnpj():  # Formata o CNPJ para o padrão 00.000.000/0000-00
-            s = cnpj_var.get()
-            # remove todos os caracteres e letras que não são números
-            s = s.replace('.', '')
-            s = s.replace('(', '')
-            s = s.replace(')', '')
-            s = s.replace('-', '')
-            s = s.replace(' ', '')
-            s = s.replace('/', '')
-            # adiciona os pontos e traços
-            if len(s) == 0:
-                s = ''
-            elif len(s) < 3:
-                s = s[:2] + '.' + s[2:]
-            elif len(s) < 6:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:]
-            elif len(s) < 9:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + s[8:]
-            elif len(s) < 13:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
-                    s[8:12] + '-' + s[12:]
-            else:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
-                    s[8:12] + '-' + s[12:14]
-                
-            cnpj_var.set(s)
-
-            # atualizar texto dentro do Entry
-            cnpj.icursor(len(s))
-
-        # Listener para formatar CNPJ
-        cnpj_var.trace('w', format_cnpj)
-
-        # Telefone
-        telefone_var = tk.StringVar()
-        telefone = ttk.Entry(
-            widgets_frame2, textvariable=telefone_var)
-        telefone.grid(column=2, row=3, sticky="we", pady=paddingY)
-        telefone_label = ttk.Label(
-            widgets_frame2, text="Telefone", font="colortube 11")
-        telefone_label.grid(column=2, row=3,
-                            sticky="nw",
-                            padx=5)
-
-       
-
-        def format_phone():  # Formata o telefone para (xx) xxxx-xxxx
-            s = telefone_var.get()
-            # remove todos os caracteres e letras que não são números
-            s = s.replace('.', '')
-            s = s.replace('(', '')
-            s = s.replace(')', '')
-            s = s.replace('-', '')
-            s = s.replace(' ', '')
-            if len(s) == 0:
-                s = ''
-            elif len(s) < 3:
-                s = '(' + s + ')'
-            elif len(s) < 7:
-                s = '(' + s[:2] + ') ' + s[2:]
-            elif len(s) < 11:
-                s = '(' + s[:2] + ') ' + s[2:6] + '-' + s[6:]
-            else:
-                s = '(' + s[:2] + ') ' + s[2:7] + '-' + s[7:11]
-            telefone_var.set(s)
-
-            # atualizar texto dentro do Entry
-            telefone.icursor(len(s))
-
-        # Listener para formatar telefone
-        telefone_var.trace('w', format_phone)
-
-
-
-        def script():  # Gera o script de Import
-            ticket = nome_ong.get()
-            base_origem = cnpj.get()
-            base_destino = telefone.get()
-            caminho = caminhoBox.get()
-
-            if varVerCheck.get():
-                version = " version=12.1"
-            else:
-                version = ""
-
-            if varMetaCheck.get():
-                metadata = " CONTENT=METADATA_ONLY"
-            else:
-                metadata = ""
-
-            schemas = []
-            schemas_remap = []
-            tablespaces = []
-            drops = []
-            datafiles_comand = []
-            unlock = []
-            remap = ""
-            for ownerData in items:
-                owner = ownerData["owner_origem"].get().upper()
-                destino = ownerData["owner_destino"].get().upper()
-                senha = ownerData["senha"].get()
-                dataFiles = int(ownerData["data_file_spin"].get())
-
-                schemas.append(f"{owner},")
-                schemas_remap.append(f"{owner}:{destino},")
-                tablespaces.append(
-                    f"{owner}_DAT:{destino}_DAT,{owner}_IDX:{destino}_IDX,")
-
-                if ownerData["var_remap_check"].get():
-                    owner = destino
-
-                if not ownerData["var_senha_check"].get():
-                    senha = owner
-
-                if ownerData["var_drop_check"].get():
-                    drops.append(
-                        f"DROP USER {owner} CASCADE;\nDROP TABLESPACE {owner}_DAT INCLUDING CONTENTS AND DATAFILES;\nDROP TABLESPACE {owner}_IDX INCLUDING CONTENTS AND DATAFILES;\n\n")
-
-                datafiles_comand.append(
-                    f"create tablespace {owner}_DAT datafile '{caminho}/{owner}_DAT.dbf' size 100m autoextend on next 100m;\n")
-                for datafile in range(dataFiles-1):
-                    if dataFiles > 1:
-                        datafiles_comand.append(
-                            f"alter tablespace {owner}_DAT add datafile '{caminho}/{owner}_DAT{datafile+2}.dbf' size 100m autoextend on next 100m;\n")
-
-                datafiles_comand.append(
-                    f"create tablespace {owner}_IDX datafile '{caminho}/{owner}_IDX.dbf' size 100m autoextend on next 100m;\n")
-                datafiles_comand.append(
-                    f"create user {owner} identified by {owner} default tablespace {owner}_DAT temporary tablespace TEMP quota unlimited on {owner}_DAT quota unlimited on {owner}_IDX quota 0k on SYSTEM;\n\n")
-
-                unlock.append(f"""alter user {owner} identified by {senha} account unlock;\n
-
-BEGIN
-DBMS_NETWORK_ACL_ADMIN.append_host_ace (
-    host       => '*',
-    ace        => xs$ace_type(privilege_list => xs$name_list('connect','resolve'),
-                            principal_name => '{owner}',
-                            principal_type => XS_ACL.PTYPE_DB));
-END;
-/\n\n""")
-            if ownerData["var_remap_check"].get():
-                a = "".join(schemas_remap)[:-1].upper()
-                b = "".join(tablespaces)[:-1].upper()
-                remap = remap + f" REMAP_SCHEMA={a} REMAP_TABLESPACE={b}"
-
-            script = f"""--ORIGEM: {base_origem.upper()}
-export ORACLE_SID={base_origem.lower()}
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-expdp BKP_EXPORT/AxxxM0 directory=DBA schemas={"".join(schemas)[:-1].upper()} dumpfile={ticket}.dmp logfile=exp_{ticket}.log exclude=statistics{version}{metadata}
-
---DESTINO: {base_destino.upper()}
-
-{"".join(drops)}{"".join(datafiles_comand)}
-export NLS_LANG="BRAZILIAN PORTUGUESE_BRAZIL.WE8MSWIN1252"
-impdp BKP_IMPORT/AxxxM0 directory=DBA dumpfile={ticket}.dmp logfile=imp_{ticket}.log{remap}
-
-{"".join(unlock)}
-"""
-
-            # Cria ou sobreescreve o aquivo import.txt
-            f = open("import.txt", "w+")
-            f.write(script)  # Escreve o script gerado
-            f.close()  # Fecha o arquivo import.txt
-            os.startfile("import.txt")  # Abre o arquivo import.txt
-
         accentbutton = ttk.Button(
-            self, text="Proximo Paço", style="AccentButton", command=lambda: controller.show_frame("DadosOng"))
+            self, text="Criar", style="AccentButton")
         accentbutton.grid(row=11, column=1, padx=10, pady=20, sticky='nswe')
-        button = ttk.Button(self, text="Voltar ao início",
-                            command=lambda: controller.show_frame("StartPage"))
+        button = ttk.Button(self, text="Voltar",
+                            command=lambda: controller.show_frame("DadosOng"))
         button.grid(row=11, column=0, padx=10, pady=20, sticky='nswe')
 
 
-class DadosOng(ttk.Frame):
-
-    def __init__(self, parent, controller):
-        ttk.Frame.__init__(self, parent)
-        self.controller = controller
-
-        # Localização das caixas -----------------------------------------------------------------------------------------------------------------------------
-        paddingY = 10
-
-        # Titulo ---------------------------------------------------------------------------------------------------------------------------------------------
-        titulo = ttk.Label(self, text="Cadastro de ONG",
-                           font=controller.title_font, foreground="white")
-        titulo.grid(row=0, column=0, pady=20, columnspan=4)
-
-        # Frame Coluna 1   -----------------------------------------------------------------------------------------------------------------------------------
-        widgets_frame = tk.Frame(self)
-        widgets_frame.grid(row=1, column=1, sticky='nw',
-                            padx=(paddingY, paddingY + 15))  # Cria widgets_frame2 na janela
-
-        # Nome da ONG
-        nome_ong = ttk.Entry(widgets_frame)
-        nome_ong.grid(column=2, row=1, columnspan=2,
-                      pady=paddingY, sticky="we")
-        nome_ong_label = ttk.Label(
-            widgets_frame, text="Nome da ONG", font="colortube 11")
-        nome_ong_label.grid(column=2, row=1,
-                            sticky="nw",
-                            padx=5)
-
-        # CNPJ
-        cnpj_var = tk.StringVar()
-        cnpj = ttk.Entry(widgets_frame, textvariable=cnpj_var)
-        cnpj.grid(column=2, row=2, pady=paddingY,
-                  columnspan=2, sticky="we")
-        cnpj_label = ttk.Label(
-            widgets_frame, text="CNPJ", font="colortube 11")
-        cnpj_label.grid(column=2, row=2,
-                        sticky="nw",
-                        padx=5)
-        
-        def format_cnpj():  # Formata o CNPJ para o padrão 00.000.000/0000-00
-            s = cnpj_var.get()
-            # remove todos os caracteres e letras que não são números
-            s = s.replace('.', '')
-            s = s.replace('(', '')
-            s = s.replace(')', '')
-            s = s.replace('-', '')
-            s = s.replace(' ', '')
-            s = s.replace('/', '')
-            # adiciona os pontos e traços
-            if len(s) == 0:
-                s = ''
-            elif len(s) < 3:
-                s = s[:2] + '.' + s[2:]
-            elif len(s) < 6:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:]
-            elif len(s) < 9:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + s[8:]
-            elif len(s) < 13:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
-                    s[8:12] + '-' + s[12:]
-            else:
-                s = s[:2] + '.' + s[2:5] + '.' + s[5:8] + '/' + \
-                    s[8:12] + '-' + s[12:14]
-                
-            cnpj_var.set(s)
-
-            # atualizar texto dentro do Entry
-            cnpj.icursor(len(s))
-
-        # Listener para formatar CNPJ
-        cnpj_var.trace('w', format_cnpj)
-
-        # Telefone
-        telefone_var = tk.StringVar()
-        telefone = ttk.Entry(
-            widgets_frame, textvariable=telefone_var)
-        telefone.grid(column=2, row=3, sticky="we", pady=paddingY)
-        telefone_label = ttk.Label(
-            widgets_frame, text="Telefone", font="colortube 11")
-        telefone_label.grid(column=2, row=3,
-                            sticky="nw",
-                            padx=5)
-
-       
-
-        def format_phone():  # Formata o telefone para (xx) xxxx-xxxx
-            s = telefone_var.get()
-            # remove todos os caracteres e letras que não são números
-            s = s.replace('.', '')
-            s = s.replace('(', '')
-            s = s.replace(')', '')
-            s = s.replace('-', '')
-            s = s.replace(' ', '')
-            if len(s) == 0:
-                s = ''
-            elif len(s) < 3:
-                s = '(' + s + ')'
-            elif len(s) < 7:
-                s = '(' + s[:2] + ') ' + s[2:]
-            elif len(s) < 11:
-                s = '(' + s[:2] + ') ' + s[2:6] + '-' + s[6:]
-            else:
-                s = '(' + s[:2] + ') ' + s[2:7] + '-' + s[7:11]
-            telefone_var.set(s)
-
-            # atualizar texto dentro do Entry
-            telefone.icursor(len(s))
-
-        # Listener para formatar telefone
-        telefone_var.trace('w', format_phone)
-      
-
-
-
-
-class CompanyPage(tk.Frame):
+class CompanyPage(ttk.Frame):
 
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
