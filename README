@@ -45,7 +45,7 @@ Ele foi desenvolvido utilizando a linguagem Python e a biblioteca Tkinter para a
 As bibliotecas necessárias podem ser instaladas utilizando o gerenciador de pacotes do Python (pip). Execute o seguinte comando:
 
 ```bash
-pip install tkinter Pillow
+pip install Pillow
 ```
 
 ## Como Executar o Projeto
