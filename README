@@ -50,9 +50,9 @@ pip install tkinter Pillow
 
 ## Como Executar o Projeto
 
-1. Clone o repositório do Aidly para o seu ambiente local.
-2. Acesse a pasta do projeto no terminal ou prompt de comando.
-3. Execute o seguinte comando para iniciar o aplicativo:
+1. Baixe o arquivo ZIP do projeto e extraia os arquivos em uma pasta.
+2. Abra o terminal e navegue até a pasta onde os arquivos foram extraídos.
+3. Execute o seguinte comando:
 
 ```bash
 python Aidly.py
