@@ -781,4 +781,3 @@ if __name__ == "__main__":
 
     # Inicia o loop principal da interface gráfica, permitindo que a janela seja exibida
     app.mainloop()
-

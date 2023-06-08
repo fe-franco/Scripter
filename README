@@ -1,0 +1,70 @@
+# Aidly
+
+O Aidly é um aplicativo inovador desenvolvido para facilitar as doações para organizações não governamentais (ONGs). Ele oferece uma experiência personalizada e gamificada, tornando o processo de doação simples, divertido e gratificante.
+
+## Integrantes do Grupo
+
+- Gabriel Galdino da Silva (RM: 550711)
+- Murilo Nogueira (RM: 89162)
+- Diogo Fagioli Bombonatti (RM: 551694)
+- Luis Fernando Menezes Zampar (RM: 550531)
+- Felipe Franco de Oliveira Perdome Machado (RM: 552064)
+
+## Descrição do Projeto
+
+O Aidly é um aplicativo desenvolvido com o objetivo de conectar pessoas que desejam fazer doações com organizações não governamentais (ONGs) que precisam de apoio. O aplicativo utiliza um algoritmo de inteligência artificial para fazer o matching entre as preferências do usuário e as requisições de doações das ONGs parceiras, fornecendo uma lista personalizada de doações relevantes.
+
+O aplicativo permite aos usuários criar um perfil personalizado, indicando suas preferências de doação e informações básicas. As ONGs podem criar requisições de doações especificando o tipo de doação desejada, quantidade necessária, data limite e outras informações relevantes.
+
+Além disso, o Aidly otimiza as rotas de coleta das doações físicas, aguardando até que haja um número suficiente de usuários doando na mesma região para tornar a coleta mais eficiente. O aplicativo também oferece opções de doação financeira, de alimentos e objetos, permitindo aos usuários selecionar os itens específicos que desejam doar e fornecer informações detalhadas.
+
+Para tornar o processo de doação mais envolvente, o Aidly incorpora elementos de gamificação, como desafios, metas, conquistas, rankings e recompensas virtuais. Isso incentiva os usuários a participar ativamente e alcançar objetivos relacionados às doações.
+
+Esse é um prototipo do aplicativo Aidly, da parte de cadastro de ONGs e criação de requisições de doações.
+
+Ele foi desenvolvido utilizando a linguagem Python e a biblioteca Tkinter para a criação da interface gráfica. O aplicativo foi desenvolvido para ser executado em ambiente desktop.
+
+## Funcionalidades
+
+- Cadastro de ONGs
+- Criação de requisições de doações
+
+## Tecnologias Utilizadas
+
+- Python
+- Tkinter
+- PIL
+
+## Requisitos
+
+- Python 3.x instalado
+- Bibliotecas: tkinter, PIL
+
+## Instalação de Dependências
+
+As bibliotecas necessárias podem ser instaladas utilizando o gerenciador de pacotes do Python (pip). Execute o seguinte comando:
+
+```bash
+pip install tkinter Pillow
+```
+
+## Como Executar o Projeto
+
+1. Clone o repositório do Aidly para o seu ambiente local.
+2. Acesse a pasta do projeto no terminal ou prompt de comando.
+3. Execute o seguinte comando para iniciar o aplicativo:
+
+```bash
+python Aidly.py
+```
+
+## Exemplos de Uso
+
+1. Clique no botão "Cadastrar ONG" para acessar a tela de cadastro de ONGs.
+2. Preencha os campos com as informações da ONG e clique no botão "Cadastrar" para finalizar o cadastro.
+3. Clique no botão "Criar Requisição" para acessar a tela de criação de requisições de doações.
+4. Preencha os campos com as informações da requisição e clique no botão "Criar" para finalizar a criação da requisição.
+
+## Contato
+
+Para obter suporte adicional ou entrar em contato com a equipe do Aidly, envie um e-mail para contato.aidly@gmail.com ou visite nosso site em. Estamos prontos para ajudar!
